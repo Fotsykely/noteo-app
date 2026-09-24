@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { Chip } from '@/components/ui/category-chip';
+import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PlaceRow } from '@/components/ui/place-card';
 import { Screen } from '@/components/ui/screen';
@@ -34,7 +35,7 @@ export default function SearchScreen() {
 
   return (
     <Screen>
-      <View className="flex-row items-center gap-2 px-4 pt-2">
+      <Container padded={false} className="flex-row items-center gap-2 px-4 pt-2 lg:pt-6">
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
@@ -43,10 +44,10 @@ export default function SearchScreen() {
           className="h-10 w-10 items-center justify-center active:opacity-60">
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
-        <SearchBar className="flex-1" value={search} onChangeText={setSearch} autoFocus />
-      </View>
+        <SearchBar className="flex-1 lg:max-w-xl" value={search} onChangeText={setSearch} autoFocus />
+      </Container>
 
-      <View className="flex-row gap-2 px-5 py-3">
+      <Container className="flex-row flex-wrap gap-2 py-3">
         {CATEGORIES.map((item) => (
           <Chip
             key={item.slug}
@@ -56,10 +57,10 @@ export default function SearchScreen() {
             onPress={() => setCategory(category === item.slug ? null : item.slug)}
           />
         ))}
-      </View>
+      </Container>
 
       {idle ? (
-        <View className="px-5 pt-4">
+        <Container className="pt-4">
           <Text className="text-sm font-semibold text-ink dark:text-white">
             Recherches fréquentes
           </Text>
@@ -68,13 +69,18 @@ export default function SearchScreen() {
               <Chip key={item} label={item} onPress={() => setSearch(item)} />
             ))}
           </View>
-        </View>
+        </Container>
       ) : (
         <FlatList
           data={results}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{
+          paddingBottom: 24,
+          width: '100%',
+          maxWidth: 1280,
+          alignSelf: 'center',
+        }}
           renderItem={({ item }) => <PlaceRow place={item} distanceMeters={item.distance} />}
           ListEmptyComponent={
             <EmptyState

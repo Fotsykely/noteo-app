@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/category-chip';
 import { CATEGORIES, CATEGORY_BY_SLUG, DISTRICTS } from '@/constants/categories';
 import { useColors } from '@/hooks/use-theme';
-import { cn } from '@/lib/utils';
+import { cn, noWebOutline } from '@/lib/utils';
 import type { CategorySlug } from '@/types';
 
 function Field({
@@ -38,7 +38,8 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor={colors.textFaint}
         keyboardType={keyboardType ?? 'default'}
-        className="mt-2 h-14 rounded-card border border-ink-100 px-4 text-base text-ink dark:border-white/10 dark:text-white"
+        className="mt-2 h-14 rounded-card border border-ink-100 focus:border-brand-500 px-4 text-base text-ink dark:border-white/10 dark:text-white"
+      style={noWebOutline}
       />
     </View>
   );
@@ -72,7 +73,13 @@ export default function NewPlaceScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: 40,
+          width: '100%',
+          maxWidth: 680,
+          alignSelf: 'center',
+        }}>
         <Text className="text-sm leading-5 text-ink-500 dark:text-ink-300">
           Ajoutez un lieu absent du catalogue. Il sera contrôlé avant publication.
         </Text>

@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 
 import { Button } from '@/components/ui/button';
 import { useColors } from '@/hooks/use-theme';
+import { noWebOutline } from '@/lib/utils';
 import { signIn } from '@/lib/session';
 import type { IoniconName } from '@/types';
 
@@ -53,7 +54,13 @@ export default function SignInScreen() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: 40,
+          width: '100%',
+          maxWidth: 680,
+          alignSelf: 'center',
+        }}>
         <Text className="text-2xl font-bold text-ink dark:text-white">
           {mode === 'signIn' ? 'Content de vous revoir' : 'Créer un compte'}
         </Text>
@@ -80,7 +87,8 @@ export default function SignInScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
-          className="h-14 rounded-card border border-ink-100 px-4 text-base text-ink dark:border-white/10 dark:text-white"
+          className="h-14 rounded-card border border-ink-100 focus:border-brand-500 px-4 text-base text-ink dark:border-white/10 dark:text-white"
+        style={noWebOutline}
         />
         <TextInput
           value={password}
@@ -89,7 +97,8 @@ export default function SignInScreen() {
           placeholderTextColor={colors.textFaint}
           secureTextEntry
           autoCapitalize="none"
-          className="mt-3 h-14 rounded-card border border-ink-100 px-4 text-base text-ink dark:border-white/10 dark:text-white"
+          className="mt-3 h-14 rounded-card border border-ink-100 focus:border-brand-500 px-4 text-base text-ink dark:border-white/10 dark:text-white"
+        style={noWebOutline}
         />
 
         <Button

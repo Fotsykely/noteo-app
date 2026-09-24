@@ -25,6 +25,19 @@ Prochaine étape : Supabase (schéma, RLS, triggers, RPC géo) — voir « Feuil
 - Les composants d'icônes (`Ionicons`) **n'acceptent pas `className`** : passer `color`,
   résolu via le hook `useColors()` (`src/hooks/use-theme.ts`).
 - Mode sombre géré par les variantes `dark:`, suivant le réglage système.
+- **Deux mises en page, un seul code.** En dessous de 1024 px (`useIsDesktop()`,
+  `src/hooks/use-breakpoint.ts`) l'app garde sa navigation mobile par onglets du bas.
+  Au-dessus, `src/app/_layout.tsx` affiche une barre latérale permanente
+  (`src/components/app-sidebar.tsx`) et masque les onglets. Toute modification desktop
+  doit laisser le rendu mobile intact.
+- **Largeur de contenu :** passer par `Container` (`src/components/ui/container.tsx`)
+  plutôt que des `px-5` en dur. Attention aux paddings imbriqués : `PlaceRow` et `Row`
+  portent déjà le leur, d'où l'option `padded={false}`.
+- **Éviter de surcharger via `className` les classes de positionnement du `Container`**
+  (`self-center`, `max-w-*`) : la résolution des conflits n'est pas fiable. Utiliser une
+  `View` interne pour contraindre ou aligner.
+- **Champs de saisie :** toujours `style={noWebOutline}` plus un focus visible
+  (`focus:border-brand-500`), sinon le navigateur ajoute son liseré bleu.
 - **Classement : moyenne bayésienne** (`bayesianScore` dans `src/lib/utils.ts`). Ne jamais
   trier « les mieux notés » sur la moyenne brute : un lieu noté 5 par une personne ne doit pas
   devancer un lieu noté 4,7 par deux cents.
@@ -35,6 +48,7 @@ Prochaine étape : Supabase (schéma, RLS, triggers, RPC géo) — voir « Feuil
 |---|---|---|
 | 0 | Squelette Expo + NativeWind | fait |
 | 1 | Design system + écrans sur données factices | fait |
+| 1b | Mise en page desktop (barre latérale, grilles) | fait |
 | 2 | Supabase : schéma, RLS, triggers, RPC `nearby_places` | à faire |
 | 3 | Catalogue réel d'Antananarivo (import OpenStreetMap) | à faire |
 | 4 | Branchement en lecture (React Query, géolocalisation) | à faire |

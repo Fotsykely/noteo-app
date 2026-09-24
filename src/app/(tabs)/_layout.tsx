@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform, type ColorValue } from 'react-native';
 
+import { useIsDesktop } from '@/hooks/use-breakpoint';
 import { useColors } from '@/hooks/use-theme';
 import type { IoniconName } from '@/types';
 
@@ -13,6 +14,7 @@ function icon(name: IoniconName, outline: IoniconName) {
 
 export default function TabsLayout() {
   const colors = useColors();
+  const isDesktop = useIsDesktop();
 
   return (
     <Tabs
@@ -21,12 +23,15 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textFaint,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.border,
-          height: Platform.select({ ios: 86, default: 64 }),
-          paddingTop: 6,
-        },
+        // Sur grand écran, la navigation passe par la barre latérale de la racine.
+        tabBarStyle: isDesktop
+          ? { display: 'none' }
+          : {
+              backgroundColor: colors.card,
+              borderTopColor: colors.border,
+              height: Platform.select({ ios: 86, default: 64 }),
+              paddingTop: 6,
+            },
       }}>
       <Tabs.Screen
         name="index"

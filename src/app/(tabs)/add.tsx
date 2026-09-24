@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
+import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PlaceRow } from '@/components/ui/place-card';
 import { Screen } from '@/components/ui/screen';
@@ -23,7 +24,7 @@ export default function AddScreen() {
 
   return (
     <Screen>
-      <View className="px-5 pb-3 pt-2">
+      <Container className="pb-3 pt-2 lg:pt-8">
         <Text className="text-[28px] font-bold leading-8 text-ink dark:text-white">
           Noter un lieu
         </Text>
@@ -31,18 +32,23 @@ export default function AddScreen() {
           Cherchez l&apos;endroit où vous êtes allé.
         </Text>
         <SearchBar
-          className="mt-4"
+          className="mt-4 lg:max-w-xl"
           value={search}
           onChangeText={setSearch}
           placeholder="Nom du restaurant, du cabinet, du garage…"
         />
-      </View>
+      </Container>
 
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{
+          paddingBottom: 24,
+          width: '100%',
+          maxWidth: 1280,
+          alignSelf: 'center',
+        }}
         renderItem={({ item }) => <PlaceRow place={item} distanceMeters={item.distance} />}
         ListEmptyComponent={
           search.length < 2 ? (
@@ -67,7 +73,7 @@ export default function AddScreen() {
       <Pressable
         onPress={() => router.push('/place/new')}
         accessibilityRole="button"
-        className="flex-row items-center gap-3 border-t border-ink-100 px-5 py-4 active:opacity-70 dark:border-white/10">
+        className="w-full max-w-[1280px] flex-row items-center gap-3 self-center border-t border-ink-100 px-5 py-4 active:opacity-70 hover:bg-ink-50 dark:border-white/10 dark:hover:bg-white/5">
         <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/20">
           <Ionicons name="add" size={22} color={colors.brand} />
         </View>

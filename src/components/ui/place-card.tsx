@@ -7,7 +7,7 @@ import { RatingBadge } from '@/components/ui/rating-badge';
 import { StarRating } from '@/components/ui/star-rating';
 import { CATEGORY_BY_SLUG } from '@/constants/categories';
 import { useColors } from '@/hooks/use-theme';
-import { formatDistance } from '@/lib/utils';
+import { cn, formatDistance } from '@/lib/utils';
 import type { Place } from '@/types';
 
 function Cover({ place, className }: { place: Place; className?: string }) {
@@ -34,10 +34,15 @@ function Cover({ place, className }: { place: Place; className?: string }) {
 type PlaceCardProps = {
   place: Place;
   distanceMeters?: number;
+  /**
+   * `fixed` : largeur constante, pour le carrousel horizontal du mobile.
+   * `fill`  : épouse la colonne, pour la grille des grands écrans.
+   */
+  width?: 'fixed' | 'fill';
 };
 
-/** Carte verticale, pour les carrousels horizontaux de l'accueil. */
-export function PlaceCard({ place, distanceMeters }: PlaceCardProps) {
+/** Carte verticale, pour les carrousels et les grilles. */
+export function PlaceCard({ place, distanceMeters, width = 'fixed' }: PlaceCardProps) {
   const category = CATEGORY_BY_SLUG[place.categorySlug];
 
   return (
@@ -45,7 +50,12 @@ export function PlaceCard({ place, distanceMeters }: PlaceCardProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={place.name}
-        className="w-60 overflow-hidden rounded-card border border-ink-100 bg-surface active:opacity-80 dark:border-white/10 dark:bg-surface-darkMuted">
+        className={cn(
+          'overflow-hidden rounded-card border border-ink-100 bg-surface active:opacity-80 dark:border-white/10 dark:bg-surface-darkMuted',
+          // Le survol n'existe qu'au pointeur : invisible sur mobile.
+          'hover:border-ink-200 dark:hover:bg-white/10',
+          width === 'fill' ? 'w-full' : 'w-60'
+        )}>
         <Cover place={place} className="h-32 w-full bg-ink-100 dark:bg-white/10" />
         <View className="p-3">
           <Text className="text-base font-semibold text-ink dark:text-white" numberOfLines={1}>
@@ -87,7 +97,7 @@ export function PlaceRow({ place, distanceMeters, rank }: PlaceRowProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={place.name}
-        className="flex-row items-center gap-3 rounded-card px-4 py-3 active:bg-ink-50 dark:active:bg-white/5">
+        className="flex-row items-center gap-3 rounded-card px-4 py-3 active:bg-ink-50 hover:bg-ink-50 dark:hover:bg-white/5 dark:active:bg-white/5">
         {rank !== undefined && (
           <Text className="w-6 text-base font-bold text-ink-300 dark:text-ink-500">{rank}</Text>
         )}

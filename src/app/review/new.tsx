@@ -9,6 +9,7 @@ import { StarInput } from '@/components/ui/star-rating';
 import { CATEGORY_BY_SLUG } from '@/constants/categories';
 import { getPlace } from '@/data/mock';
 import { useColors } from '@/hooks/use-theme';
+import { noWebOutline } from '@/lib/utils';
 import { useSession } from '@/lib/session';
 
 const RATING_LABELS = ['', 'Très mauvais', 'Mauvais', 'Correct', 'Bien', 'Excellent'];
@@ -60,7 +61,13 @@ export default function NewReviewScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: 40,
+          width: '100%',
+          maxWidth: 680,
+          alignSelf: 'center',
+        }}>
         <Text className="text-2xl font-bold text-ink dark:text-white">{place.name}</Text>
         <Text className="mt-1 text-sm text-ink-500 dark:text-ink-300">
           {place.subcategory} · {place.district}
@@ -109,7 +116,8 @@ export default function NewReviewScreen() {
           placeholder="Racontez votre expérience : ce qui vous a plu, ce qui a manqué…"
           placeholderTextColor={colors.textFaint}
           textAlignVertical="top"
-          className="mt-3 min-h-32 rounded-card border border-ink-100 p-4 text-base leading-5 text-ink dark:border-white/10 dark:text-white"
+          className="mt-3 min-h-32 rounded-card border border-ink-100 focus:border-brand-500 p-4 text-base leading-5 text-ink dark:border-white/10 dark:text-white"
+        style={noWebOutline}
         />
         <Text className="mt-1.5 text-right text-xs text-ink-300 dark:text-ink-500">
           {comment.length}/800

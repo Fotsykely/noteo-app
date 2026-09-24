@@ -9,7 +9,7 @@ type SectionHeaderProps = {
 
 export function SectionHeader({ title, subtitle, actionLabel, onAction }: SectionHeaderProps) {
   return (
-    <View className="flex-row items-end justify-between px-5">
+    <View className="flex-row items-end justify-between">
       <View className="flex-1">
         <Text className="text-xl font-bold text-ink dark:text-white">{title}</Text>
         {subtitle && (

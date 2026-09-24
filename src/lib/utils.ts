@@ -1,3 +1,14 @@
+import { Platform, type TextStyle } from 'react-native';
+
+/**
+ * Supprime le liseré de focus bleu que le navigateur ajoute aux champs.
+ * Sans effet sur mobile. Toujours l'accompagner d'un indicateur de focus
+ * visible (bordure de marque), sinon la navigation au clavier devient aveugle.
+ */
+export const noWebOutline = (Platform.OS === 'web'
+  ? { outlineStyle: 'none' }
+  : {}) as TextStyle;
+
 /** Concatène des classes conditionnelles sans dépendance externe. */
 export function cn(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(' ');

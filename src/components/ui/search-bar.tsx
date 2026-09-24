@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { useColors } from '@/hooks/use-theme';
-import { cn } from '@/lib/utils';
+import { cn, noWebOutline } from '@/lib/utils';
 
 type SearchBarProps = {
   value?: string;
@@ -23,11 +24,13 @@ export function SearchBar({
   className,
 }: SearchBarProps) {
   const colors = useColors();
+  const [focused, setFocused] = useState(false);
 
   const content = (
     <View
       className={cn(
-        'h-14 flex-row items-center gap-3 rounded-pill bg-ink-50 px-5 dark:bg-white/10',
+        'h-14 flex-row items-center gap-3 rounded-pill border bg-ink-50 px-5 dark:bg-white/10',
+        focused ? 'border-brand-500' : 'border-transparent',
         className
       )}>
       <Ionicons name="search" size={20} color={colors.textMuted} />
@@ -37,7 +40,9 @@ export function SearchBar({
         placeholder={placeholder}
         placeholderTextColor={colors.textFaint}
         editable={!onPress}
-        style={{ pointerEvents: onPress ? 'none' : 'auto' }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={[noWebOutline, { pointerEvents: onPress ? 'none' : 'auto' }]}
         autoFocus={autoFocus}
         returnKeyType="search"
         className="flex-1 text-base text-ink dark:text-white"

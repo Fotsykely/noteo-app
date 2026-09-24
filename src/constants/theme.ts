@@ -1,65 +1,51 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Jetons de design partagés. Les mêmes valeurs sont déclarées dans `tailwind.config.js`
+ * pour les classes NativeWind ; ce fichier sert aux API qui exigent une couleur en JS
+ * (navigation, barre de statut, icônes).
  */
 
-import '@/global.css';
+export const palette = {
+  brand: {
+    50: '#E6F7F1',
+    100: '#C2ECDD',
+    500: '#00A676',
+    600: '#008F65',
+    700: '#007352',
+  },
+  ink: {
+    DEFAULT: '#0E1116',
+    800: '#1C2127',
+    700: '#3A4048',
+    500: '#6B7280',
+    300: '#A8AFB8',
+    200: '#D7DBE0',
+    100: '#EDEFF2',
+    50: '#F7F8FA',
+  },
+  star: '#FFB800',
+  surface: {
+    light: '#FFFFFF',
+    lightMuted: '#F7F8FA',
+    dark: '#0B0D10',
+    darkMuted: '#15181D',
+  },
+} as const;
 
-import { Platform } from 'react-native';
-
-export const Colors = {
+export const navigationTheme = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    background: palette.surface.light,
+    card: palette.surface.light,
+    text: palette.ink.DEFAULT,
+    border: palette.ink[100],
+    primary: palette.brand[500],
+    notification: palette.brand[500],
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    background: palette.surface.dark,
+    card: palette.surface.dark,
+    text: '#FFFFFF',
+    border: '#22262C',
+    primary: palette.brand[500],
+    notification: palette.brand[500],
   },
 } as const;
-
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
-
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
-
-export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
-} as const;
-
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;

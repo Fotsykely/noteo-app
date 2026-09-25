@@ -79,12 +79,14 @@ export default function ExploreScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={{ flexGrow: 0, flexShrink: 0 }}
             contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingVertical: 12 }}>
             {categoryChips}
           </ScrollView>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={{ flexGrow: 0, flexShrink: 0 }}
             contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingBottom: 12 }}>
             {districtChips}
           </ScrollView>

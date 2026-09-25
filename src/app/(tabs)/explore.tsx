@@ -71,8 +71,8 @@ export default function ExploreScreen() {
       {/* Filtres : défilement horizontal au doigt, retour à la ligne au pointeur. */}
       {isDesktop ? (
         <Container className="pt-5">
-          <View className="flex-row flex-wrap gap-2">{categoryChips}</View>
-          <View className="mt-2 flex-row flex-wrap gap-2">{districtChips}</View>
+          <View className="flex-row flex-wrap gap-x-2 gap-y-3">{categoryChips}</View>
+          <View className="mt-3 flex-row flex-wrap gap-x-2 gap-y-3">{districtChips}</View>
         </Container>
       ) : (
         <>

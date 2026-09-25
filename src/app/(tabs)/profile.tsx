@@ -5,7 +5,6 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Screen } from '@/components/ui/screen';
 import { useColors } from '@/hooks/use-theme';
 import { signOut, useSession } from '@/lib/session';
@@ -47,8 +46,8 @@ export default function ProfileScreen() {
           </Text>
         </Container>
 
-        <Container>
-          {user ? (
+        {user ? (
+          <Container>
             <View className="flex-row items-center gap-4 pb-6">
               <Avatar initials={user.initials} size="lg" />
               <View className="flex-1">
@@ -56,55 +55,54 @@ export default function ProfileScreen() {
                 <Text className="text-sm text-ink-500 dark:text-ink-300">{user.email}</Text>
               </View>
             </View>
-          ) : (
-            <View className="mb-6 w-full max-w-xl rounded-card border border-ink-100 p-5 dark:border-white/10">
-              <Text className="text-lg font-semibold text-ink dark:text-white">
+          </Container>
+        ) : (
+          <Container>
+            <View className="mb-6 w-full max-w-2xl self-center rounded-card border border-ink-100 p-6 dark:border-white/10">
+              <Text className="text-center text-lg font-semibold text-ink dark:text-white">
                 Rejoignez Noteo
               </Text>
-              <Text className="mt-1.5 text-sm leading-5 text-ink-500 dark:text-ink-300">
+              <Text className="mt-1.5 text-center text-sm leading-5 text-ink-500 dark:text-ink-300">
                 La consultation est libre. Un compte n&apos;est nécessaire que pour publier un avis.
               </Text>
               <Button
                 label="Se connecter"
                 fullWidth
-                className="mt-4"
+                className="mt-5"
                 onPress={() => router.push('/auth/sign-in')}
               />
             </View>
-          )}
-        </Container>
-
-        {/* `Row` porte déjà son px-5 : le conteneur n'ajoute une marge que sur grand
-            écran, pour aligner les lignes sur le titre. */}
-        <Container padded={false} className="lg:px-3">
-          <View className="w-full max-w-[760px] border-t border-ink-100 py-1 dark:border-white/10">
-            <Row icon="star-outline" label="Mes avis" />
-            <Row icon="bookmark-outline" label="Mes favoris" />
-            <Row icon="add-circle-outline" label="Lieux que j'ai ajoutés" />
-          </View>
-        </Container>
-
-        <Container padded={false} className="mt-2 lg:px-3">
-          <View className="w-full max-w-[760px] border-t border-ink-100 py-1 dark:border-white/10">
-            <Row icon="language-outline" label="Langue — Français" />
-            <Row icon="shield-checkmark-outline" label="Règles de publication" />
-            <Row icon="information-circle-outline" label="À propos de Noteo" />
-          </View>
-        </Container>
-
-        {user ? (
-          <Container className="pt-6">
-            <View className="w-full max-w-xs">
-              <Button label="Se déconnecter" variant="outline" fullWidth onPress={signOut} />
-            </View>
           </Container>
-        ) : (
-          <EmptyState
-            icon="star-outline"
-            title="Aucun avis pour le moment"
-            description="Vos avis publiés apparaîtront ici."
-          />
         )}
+
+        {/* Déconnecté : seule la carte de connexion s'affiche. */}
+        {user ? (
+          <>
+            {/* `Row` porte déjà son px-5 : le conteneur n'ajoute une marge que sur grand
+                écran, pour aligner les lignes sur le titre. */}
+            <Container padded={false} className="lg:px-3">
+              <View className="w-full max-w-[760px] border-t border-ink-100 py-1 dark:border-white/10">
+                <Row icon="star-outline" label="Mes avis" />
+                <Row icon="bookmark-outline" label="Mes favoris" />
+                <Row icon="add-circle-outline" label="Lieux que j'ai ajoutés" />
+              </View>
+            </Container>
+
+            <Container padded={false} className="mt-2 lg:px-3">
+              <View className="w-full max-w-[760px] border-t border-ink-100 py-1 dark:border-white/10">
+                <Row icon="language-outline" label="Langue — Français" />
+                <Row icon="shield-checkmark-outline" label="Règles de publication" />
+                <Row icon="information-circle-outline" label="À propos de Noteo" />
+              </View>
+            </Container>
+
+            <Container className="pt-6">
+              <View className="w-full max-w-xs">
+                <Button label="Se déconnecter" variant="outline" fullWidth onPress={signOut} />
+              </View>
+            </Container>
+          </>
+        ) : null}
 
         <Text className="px-5 py-8 text-center text-xs text-ink-300 dark:text-ink-500">
           Noteo — version 1.0.0

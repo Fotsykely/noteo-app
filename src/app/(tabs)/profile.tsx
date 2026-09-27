@@ -104,8 +104,9 @@ export default function ProfileScreen() {
           </>
         ) : null}
 
-        <Text className="px-5 py-8 text-center text-xs text-ink-300 dark:text-ink-500">
-          Noteo — version 1.0.0
+        {/* Attribution exigée par la licence ODbL : le catalogue vient d'OpenStreetMap. */}
+        <Text className="px-5 py-8 text-center text-xs leading-5 text-ink-300 dark:text-ink-500">
+          Noteo — version 1.0.0{'\n'}Données des lieux © les contributeurs d&apos;OpenStreetMap
         </Text>
       </ScrollView>
     </Screen>

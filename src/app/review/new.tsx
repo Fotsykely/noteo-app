@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/query-state';
 import { StarInput } from '@/components/ui/star-rating';
 import { CATEGORY_BY_SLUG } from '@/constants/categories';
-import { getPlace } from '@/data/mock';
+import { usePlace } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
 import { noWebOutline } from '@/lib/utils';
 import { useSession } from '@/lib/session';
@@ -20,10 +21,18 @@ export default function NewReviewScreen() {
   const colors = useColors();
   const user = useSession();
 
-  const place = useMemo(() => getPlace(placeId), [placeId]);
+  const { data: place, isPending } = usePlace(placeId);
   const [rating, setRating] = useState(0);
   const [criteria, setCriteria] = useState<Record<string, number>>({});
   const [comment, setComment] = useState('');
+
+  if (isPending) {
+    return (
+      <View className="flex-1 justify-center bg-surface dark:bg-surface-dark">
+        <LoadingState />
+      </View>
+    );
+  }
 
   if (!place) {
     return (
@@ -70,7 +79,7 @@ export default function NewReviewScreen() {
         }}>
         <Text className="text-2xl font-bold text-ink dark:text-white">{place.name}</Text>
         <Text className="mt-1 text-sm text-ink-500 dark:text-ink-300">
-          {place.subcategory} · {place.district}
+          {place.subcategory ?? category.nameFr} · {place.district}
         </Text>
 
         {/* Note globale */}

@@ -1,25 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PlaceRow } from '@/components/ui/place-card';
+import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
-import { PLACES, TANA_CENTER } from '@/data/mock';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useNearbyPlaces } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
-import { queryPlaces } from '@/lib/places';
 
 export default function AddScreen() {
   const router = useRouter();
   const colors = useColors();
   const [search, setSearch] = useState('');
 
-  const results = useMemo(
-    () => (search.length < 2 ? [] : queryPlaces(PLACES, TANA_CENTER, { search }).slice(0, 20)),
-    [search]
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const tooShort = search.trim().length < 2;
+  const results = useNearbyPlaces(
+    { search: debouncedSearch },
+    { limit: 20, enabled: debouncedSearch.length >= 2 }
   );
 
   return (
@@ -39,35 +42,41 @@ export default function AddScreen() {
         />
       </Container>
 
-      <FlatList
-        data={results}
-        keyExtractor={(item) => item.id}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingBottom: 24,
-          width: '100%',
-          maxWidth: 1280,
-          alignSelf: 'center',
-        }}
-        renderItem={({ item }) => <PlaceRow place={item} distanceMeters={item.distance} />}
-        ListEmptyComponent={
-          search.length < 2 ? (
-            <EmptyState
-              icon="star-outline"
-              title="Commencez à taper"
-              description="Deux lettres suffisent pour retrouver un lieu du catalogue."
-            />
-          ) : (
-            <EmptyState
-              icon="add-circle-outline"
-              title="Ce lieu n'est pas encore référencé"
-              description="Ajoutez-le pour être la première personne à le noter."
-              actionLabel="Ajouter ce lieu"
-              onAction={() => router.push('/place/new')}
-            />
-          )
-        }
-      />
+      <View className="flex-1">
+        {tooShort ? (
+          <EmptyState
+            icon="star-outline"
+            title="Commencez à taper"
+            description="Deux lettres suffisent pour retrouver un lieu du catalogue."
+          />
+        ) : results.isPending ? (
+          <LoadingState />
+        ) : results.isError ? (
+          <ErrorState onRetry={() => results.refetch()} />
+        ) : (
+          <FlatList
+            data={results.data}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              paddingBottom: 24,
+              width: '100%',
+              maxWidth: 1280,
+              alignSelf: 'center',
+            }}
+            renderItem={({ item }) => <PlaceRow place={item} distanceMeters={item.distance} />}
+            ListEmptyComponent={
+              <EmptyState
+                icon="add-circle-outline"
+                title="Ce lieu n'est pas encore référencé"
+                description="Ajoutez-le pour être la première personne à le noter."
+                actionLabel="Ajouter ce lieu"
+                onAction={() => router.push('/place/new')}
+              />
+            }
+          />
+        )}
+      </View>
 
       {/* Raccourci permanent vers l'ajout de lieu */}
       <Pressable

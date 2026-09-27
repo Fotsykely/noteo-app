@@ -2,9 +2,10 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { DistrictPicker } from '@/components/district-picker';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/category-chip';
-import { CATEGORIES, CATEGORY_BY_SLUG, DISTRICTS } from '@/constants/categories';
+import { CATEGORIES, CATEGORY_BY_SLUG } from '@/constants/categories';
 import { useColors } from '@/hooks/use-theme';
 import { cn, noWebOutline } from '@/lib/utils';
 import type { CategorySlug } from '@/types';
@@ -119,15 +120,12 @@ export default function NewPlaceScreen() {
         )}
 
         <Text className="mt-6 text-sm font-semibold text-ink dark:text-white">Quartier</Text>
-        <View className="mt-2 flex-row flex-wrap gap-2">
-          {DISTRICTS.map((item) => (
-            <Chip
-              key={item}
-              label={item}
-              selected={district === item}
-              onPress={() => setDistrict(item)}
-            />
-          ))}
+        <View className="mt-2 flex-row">
+          <DistrictPicker
+            value={district}
+            onChange={setDistrict}
+            placeholder="Choisir un quartier"
+          />
         </View>
 
         <Field

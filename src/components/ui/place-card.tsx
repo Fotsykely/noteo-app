@@ -7,10 +7,20 @@ import { RatingBadge } from '@/components/ui/rating-badge';
 import { StarRating } from '@/components/ui/star-rating';
 import { CATEGORY_BY_SLUG } from '@/constants/categories';
 import { useColors } from '@/hooks/use-theme';
-import { cn, formatDistance } from '@/lib/utils';
+import { placeSubtitle } from '@/lib/places';
+import { cn, formatDistance, formatRating } from '@/lib/utils';
 import type { Place } from '@/types';
 
-function Cover({ place, className }: { place: Place; className?: string }) {
+/** Photo du lieu, ou à défaut l'icône de sa catégorie sur sa teinte. */
+export function PlaceCover({
+  place,
+  className,
+  iconSize = 26,
+}: {
+  place: Place;
+  className?: string;
+  iconSize?: number;
+}) {
   const category = CATEGORY_BY_SLUG[place.categorySlug];
 
   return (
@@ -24,7 +34,7 @@ function Cover({ place, className }: { place: Place; className?: string }) {
         />
       ) : (
         <View className={`h-full w-full items-center justify-center ${category.tint.bgClass}`}>
-          <Ionicons name={category.icon} size={26} color={category.tint.color} />
+          <Ionicons name={category.icon} size={iconSize} color={category.tint.color} />
         </View>
       )}
     </View>
@@ -56,13 +66,13 @@ export function PlaceCard({ place, distanceMeters, width = 'fixed' }: PlaceCardP
           'hover:border-ink-200 dark:hover:bg-white/10',
           width === 'fill' ? 'w-full' : 'w-60'
         )}>
-        <Cover place={place} className="h-32 w-full bg-ink-100 dark:bg-white/10" />
+        <PlaceCover place={place} className="h-32 w-full bg-ink-100 dark:bg-white/10" />
         <View className="p-3">
           <Text className="text-base font-semibold text-ink dark:text-white" numberOfLines={1}>
             {place.name}
           </Text>
           <Text className="mt-0.5 text-xs text-ink-500 dark:text-ink-300" numberOfLines={1}>
-            {place.subcategory} · {place.district}
+            {placeSubtitle(place, category.nameFr)}
           </Text>
           <View className="mt-2 flex-row items-center justify-between">
             <RatingBadge value={place.ratingAvg} count={place.ratingCount} size="sm" />
@@ -91,6 +101,7 @@ type PlaceRowProps = {
 /** Ligne de liste, pour les classements et résultats de recherche. */
 export function PlaceRow({ place, distanceMeters, rank }: PlaceRowProps) {
   const colors = useColors();
+  const category = CATEGORY_BY_SLUG[place.categorySlug];
 
   return (
     <Link href={`/place/${place.id}`} asChild>
@@ -101,19 +112,21 @@ export function PlaceRow({ place, distanceMeters, rank }: PlaceRowProps) {
         {rank !== undefined && (
           <Text className="w-6 text-base font-bold text-ink-300 dark:text-ink-500">{rank}</Text>
         )}
-        <Cover place={place} className="h-[68px] w-[68px] overflow-hidden rounded-2xl bg-ink-100 dark:bg-white/10" />
+        <PlaceCover place={place} className="h-[68px] w-[68px] overflow-hidden rounded-2xl bg-ink-100 dark:bg-white/10" />
         <View className="flex-1">
           <Text className="text-base font-semibold text-ink dark:text-white" numberOfLines={1}>
             {place.name}
           </Text>
           <Text className="mt-0.5 text-xs text-ink-500 dark:text-ink-300" numberOfLines={1}>
-            {place.subcategory} · {place.district}
+            {placeSubtitle(place, category.nameFr)}
             {distanceMeters !== undefined ? ` · ${formatDistance(distanceMeters)}` : ''}
           </Text>
           <View className="mt-1.5 flex-row items-center gap-2">
             <StarRating value={place.ratingAvg} size="sm" />
             <Text className="text-xs text-ink-500 dark:text-ink-300">
-              {place.ratingAvg.toFixed(1).replace('.', ',')} · {place.ratingCount} avis
+              {place.ratingCount > 0
+                ? `${formatRating(place.ratingAvg)} · ${place.ratingCount} avis`
+                : 'Pas encore d\'avis'}
             </Text>
           </View>
         </View>

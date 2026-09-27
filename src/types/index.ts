@@ -22,14 +22,18 @@ export type Category = {
   criteria: Criterion[];
 };
 
+export type Coordinates = { lat: number; lng: number };
+
 export type Place = {
   id: string;
   name: string;
   categorySlug: CategorySlug;
-  subcategory: string;
+  /** Absente pour certains lieux proposés par les utilisateurs. */
+  subcategory?: string;
   district: string;
   city: string;
-  address: string;
+  /** Rarement renseignées dans OpenStreetMap à Tana. */
+  address?: string;
   phone?: string;
   coverUrl?: string;
   lat: number;
@@ -40,6 +44,8 @@ export type Place = {
   criteriaAvgs: Record<string, number>;
   /** Répartition des notes : index 0 = 1 étoile … index 4 = 5 étoiles */
   distribution: [number, number, number, number, number];
+  /** Présent si la fiche vient d'OpenStreetMap (attribution ODbL à afficher). */
+  osmId?: string;
 };
 
 export type Review = {
@@ -48,7 +54,10 @@ export type Review = {
   authorName: string;
   authorInitials: string;
   rating: number;
-  comment: string;
+  comment?: string;
+  /** Note par critère, partielle : un avis peut n'en noter que certains. */
   criteria: Record<string, number>;
   createdAt: string;
 };
+
+export type District = { name: string; placeCount: number };

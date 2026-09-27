@@ -58,19 +58,3 @@ export const CATEGORY_BY_SLUG: Record<CategorySlug, Category> = CATEGORIES.reduc
   (acc, category) => ({ ...acc, [category.slug]: category }),
   {} as Record<CategorySlug, Category>
 );
-
-/** Quartiers d'Antananarivo proposés dans les filtres. */
-export const DISTRICTS = [
-  'Analakely',
-  'Ivandry',
-  'Ambatobe',
-  'Ankorondrano',
-  'Andraharo',
-  'Isoraka',
-  'Antaninarenina',
-  'Behoririka',
-  'Mahamasina',
-  'Talatamaty',
-  'Ivato',
-  'Andoharanofotsy',
-];

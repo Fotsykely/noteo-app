@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,11 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
 import { CriteriaBars } from '@/components/ui/criteria-bars';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PlaceCover } from '@/components/ui/place-card';
+import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { RatingDistribution } from '@/components/ui/rating-distribution';
 import { StarRating } from '@/components/ui/star-rating';
 import { CATEGORY_BY_SLUG } from '@/constants/categories';
-import { getPlace, getReviewsForPlace, TANA_CENTER } from '@/data/mock';
 import { useIsDesktop } from '@/hooks/use-breakpoint';
+import { useLocation } from '@/hooks/use-location';
+import { usePlace, usePlaceReviews } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
 import { distanceMeters, formatDistance, formatRating, timeAgo } from '@/lib/utils';
 
@@ -25,8 +27,26 @@ export default function PlaceScreen() {
   const insets = useSafeAreaInsets();
   const isDesktop = useIsDesktop();
 
-  const place = useMemo(() => getPlace(id), [id]);
-  const reviews = useMemo(() => (place ? getReviewsForPlace(place.id) : []), [place]);
+  const location = useLocation();
+  const placeQuery = usePlace(id);
+  const reviewsQuery = usePlaceReviews(id);
+  const place = placeQuery.data;
+
+  if (placeQuery.isPending) {
+    return (
+      <View className="flex-1 justify-center bg-surface dark:bg-surface-dark">
+        <LoadingState />
+      </View>
+    );
+  }
+
+  if (placeQuery.isError) {
+    return (
+      <View className="flex-1 justify-center bg-surface dark:bg-surface-dark">
+        <ErrorState onRetry={() => placeQuery.refetch()} />
+      </View>
+    );
+  }
 
   if (!place) {
     return (
@@ -43,7 +63,9 @@ export default function PlaceScreen() {
   }
 
   const category = CATEGORY_BY_SLUG[place.categorySlug];
-  const distance = distanceMeters(TANA_CENTER, { lat: place.lat, lng: place.lng });
+  const distance = location ? distanceMeters(location.origin, place) : undefined;
+  const hasReviews = place.ratingCount > 0;
+  const reviews = reviewsQuery.data ?? [];
 
   const cover = place.coverUrl ? (
     <Image
@@ -52,17 +74,20 @@ export default function PlaceScreen() {
       transition={200}
       style={{ width: '100%', height: '100%' }}
     />
-  ) : null;
+  ) : (
+    <PlaceCover place={place} className="h-full w-full" iconSize={48} />
+  );
 
   const meta = (
     <View className="flex-row items-center gap-2">
       <View className={`rounded-pill px-2.5 py-1 ${category.tint.bgClass}`}>
         <Text className="text-xs font-semibold" style={{ color: category.tint.color }}>
-          {place.subcategory}
+          {place.subcategory ?? category.nameFr}
         </Text>
       </View>
       <Text className="text-xs text-ink-500 dark:text-ink-300">
-        {place.district} · {formatDistance(distance)}
+        {place.district}
+        {distance !== undefined ? ` · ${formatDistance(distance)}` : ''}
       </Text>
     </View>
   );
@@ -71,13 +96,13 @@ export default function PlaceScreen() {
     <View className="flex-row gap-6 rounded-card border border-ink-100 p-4 dark:border-white/10">
       <View className="items-center justify-center">
         <Text className="text-4xl font-bold text-ink dark:text-white">
-          {formatRating(place.ratingAvg)}
+          {hasReviews ? formatRating(place.ratingAvg) : '—'}
         </Text>
         <View className="mt-1.5">
           <StarRating value={place.ratingAvg} size="md" />
         </View>
         <Text className="mt-1.5 text-xs text-ink-500 dark:text-ink-300">
-          {place.ratingCount} avis
+          {hasReviews ? `${place.ratingCount} avis` : 'Aucun avis'}
         </Text>
       </View>
       <View className="flex-1 justify-center">
@@ -86,21 +111,22 @@ export default function PlaceScreen() {
     </View>
   );
 
-  const criteriaBlock = (
+  // Sans avis, des barres à zéro laisseraient croire à de mauvaises notes.
+  const criteriaBlock = hasReviews ? (
     <>
       <Text className="text-lg font-bold text-ink dark:text-white">Ce que disent les notes</Text>
       <View className="mt-3">
         <CriteriaBars criteria={category.criteria} values={place.criteriaAvgs} />
       </View>
     </>
-  );
+  ) : null;
 
   const contactBlock = (
     <View className="gap-3 rounded-card bg-ink-50 p-4 dark:bg-white/5">
       <View className="flex-row items-start gap-3">
         <Ionicons name="location-outline" size={18} color={colors.textMuted} />
         <Text className="flex-1 text-sm text-ink-700 dark:text-ink-300">
-          {place.address}, {place.city}
+          {[place.address, place.district, place.city].filter(Boolean).join(', ')}
         </Text>
       </View>
       {place.phone && (
@@ -112,11 +138,20 @@ export default function PlaceScreen() {
           <Text className="flex-1 text-sm font-medium text-brand-500">{place.phone}</Text>
         </Pressable>
       )}
+      {/* Attribution exigée par la licence ODbL des données OpenStreetMap. */}
+      {place.osmId && (
+        <Text className="text-xs text-ink-500 dark:text-ink-300">
+          Informations : © les contributeurs d&apos;OpenStreetMap
+        </Text>
+      )}
     </View>
   );
 
-  const reviewList =
-    reviews.length === 0 ? (
+  const reviewList = reviewsQuery.isPending ? (
+    <LoadingState />
+  ) : reviewsQuery.isError ? (
+    <ErrorState onRetry={() => reviewsQuery.refetch()} />
+  ) : reviews.length === 0 ? (
       <EmptyState
         icon="chatbubble-outline"
         title="Pas encore d'avis"
@@ -140,19 +175,23 @@ export default function PlaceScreen() {
               </View>
               <StarRating value={review.rating} size="sm" />
             </View>
-            <Text className="mt-3 text-sm leading-5 text-ink-700 dark:text-ink-200">
-              {review.comment}
-            </Text>
+            {review.comment && (
+              <Text className="mt-3 text-sm leading-5 text-ink-700 dark:text-ink-200">
+                {review.comment}
+              </Text>
+            )}
             <View className="mt-3 flex-row flex-wrap gap-2">
-              {category.criteria.map((criterion) => (
-                <View
-                  key={criterion.slug}
-                  className="rounded-pill bg-ink-50 px-2.5 py-1 dark:bg-white/10">
-                  <Text className="text-[11px] text-ink-700 dark:text-ink-300">
-                    {criterion.labelFr} {review.criteria[criterion.slug]}/5
-                  </Text>
-                </View>
-              ))}
+              {category.criteria
+                .filter((criterion) => review.criteria[criterion.slug] !== undefined)
+                .map((criterion) => (
+                  <View
+                    key={criterion.slug}
+                    className="rounded-pill bg-ink-50 px-2.5 py-1 dark:bg-white/10">
+                    <Text className="text-[11px] text-ink-700 dark:text-ink-300">
+                      {criterion.labelFr} {review.criteria[criterion.slug]}/5
+                    </Text>
+                  </View>
+                ))}
             </View>
           </View>
         ))}
@@ -185,7 +224,7 @@ export default function PlaceScreen() {
                 <View className="mt-3 flex-row items-center gap-2">
                   <StarRating value={place.ratingAvg} size="md" />
                   <Text className="text-sm text-ink-700 dark:text-ink-200">
-                    {formatRating(place.ratingAvg)} · {place.ratingCount} avis
+                    {hasReviews ? `${formatRating(place.ratingAvg)} · ${place.ratingCount} avis` : 'Aucun avis'}
                   </Text>
                 </View>
                 <View className="mt-5 flex-row">
@@ -208,7 +247,7 @@ export default function PlaceScreen() {
             </View>
 
             <Text className="mt-10 text-lg font-bold text-ink dark:text-white">
-              Avis ({reviews.length})
+              Avis ({place.ratingCount})
             </Text>
             {reviewList}
           </Container>
@@ -247,7 +286,7 @@ export default function PlaceScreen() {
           <View className="mt-7">{contactBlock}</View>
 
           <Text className="mt-8 text-lg font-bold text-ink dark:text-white">
-            Avis ({reviews.length})
+            Avis ({place.ratingCount})
           </Text>
           {reviewList}
         </View>

@@ -1,18 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { Chip } from '@/components/ui/category-chip';
 import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PlaceRow } from '@/components/ui/place-card';
+import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { CATEGORIES } from '@/constants/categories';
-import { PLACES, TANA_CENTER } from '@/data/mock';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useNearbyPlaces } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
-import { queryPlaces } from '@/lib/places';
 import type { CategorySlug } from '@/types';
 
 const SUGGESTIONS = ['Dentiste', 'Garage', 'Pizza', 'Pharmacie', 'Gargote', 'Carrosserie'];
@@ -23,15 +24,13 @@ export default function SearchScreen() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<CategorySlug | null>(null);
 
-  const results = useMemo(
-    () =>
-      search.trim().length === 0 && !category
-        ? []
-        : queryPlaces(PLACES, TANA_CENTER, { search, categorySlug: category }),
-    [search, category]
-  );
-
+  const debouncedSearch = useDebouncedValue(search.trim());
   const idle = search.trim().length === 0 && !category;
+
+  const results = useNearbyPlaces(
+    { search: debouncedSearch, category },
+    { limit: 50, enabled: !idle }
+  );
 
   return (
     <Screen>
@@ -70,9 +69,13 @@ export default function SearchScreen() {
             ))}
           </View>
         </Container>
+      ) : results.isPending ? (
+        <LoadingState />
+      ) : results.isError ? (
+        <ErrorState onRetry={() => results.refetch()} />
       ) : (
         <FlatList
-          data={results}
+          data={results.data}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{

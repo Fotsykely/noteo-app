@@ -1,33 +1,34 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { CategoryTile } from '@/components/ui/category-chip';
 import { Container } from '@/components/ui/container';
 import { PlaceCard, PlaceRow } from '@/components/ui/place-card';
+import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SectionHeader } from '@/components/ui/section-header';
 import { CATEGORIES } from '@/constants/categories';
-import { PLACES, TANA_CENTER } from '@/data/mock';
 import { useIsDesktop } from '@/hooks/use-breakpoint';
+import { useLocation } from '@/hooks/use-location';
+import { useCategoryCounts, useNearbyPlaces } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
-import { queryPlaces } from '@/lib/places';
 
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
   const isDesktop = useIsDesktop();
 
-  const topRated = useMemo(
-    () => queryPlaces(PLACES, TANA_CENTER, { sort: 'rating' }).slice(0, 8),
-    []
-  );
-  const nearby = useMemo(
-    () => queryPlaces(PLACES, TANA_CENTER, { sort: 'distance' }).slice(0, 6),
-    []
-  );
+  const location = useLocation();
+  const topRated = useNearbyPlaces({ sort: 'rating' }, { limit: 8 });
+  const nearby = useNearbyPlaces({ sort: 'distance' }, { limit: 6 });
+  const counts = useCategoryCounts();
+
+  const nearbySubtitle =
+    location?.source === 'device'
+      ? 'Autour de votre position'
+      : 'Autour du centre-ville (position non partagée)';
 
   return (
     <Screen>
@@ -74,7 +75,7 @@ export default function HomeScreen() {
                 label={category.nameFr}
                 icon={category.icon}
                 tint={category.tint}
-                count={PLACES.filter((place) => place.categorySlug === category.slug).length}
+                count={counts.data?.[category.slug]}
                 onPress={() => router.push(`/explore?category=${category.slug}`)}
               />
             ))}
@@ -92,10 +93,14 @@ export default function HomeScreen() {
             />
           </Container>
 
-          {isDesktop ? (
+          {topRated.isPending ? (
+            <LoadingState className="h-56" />
+          ) : topRated.isError ? (
+            <ErrorState onRetry={() => topRated.refetch()} />
+          ) : isDesktop ? (
             <Container className="mt-4">
               <View className="-mx-2 flex-row flex-wrap">
-                {topRated.map((place) => (
+                {topRated.data.map((place) => (
                   <View key={place.id} className="w-1/4 p-2 xl:w-1/5">
                     <PlaceCard place={place} distanceMeters={place.distance} width="fill" />
                   </View>
@@ -107,7 +112,7 @@ export default function HomeScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingTop: 14 }}>
-              {topRated.map((place) => (
+              {topRated.data.map((place) => (
                 <PlaceCard key={place.id} place={place} distanceMeters={place.distance} />
               ))}
             </ScrollView>
@@ -117,17 +122,23 @@ export default function HomeScreen() {
         {/* Près de vous — une colonne sur mobile, deux sur grand écran */}
         <View className="mt-8 lg:mt-12">
           <Container>
-            <SectionHeader title="Près de vous" subtitle="À moins de quelques minutes" />
+            <SectionHeader title="Près de vous" subtitle={nearbySubtitle} />
           </Container>
-          <Container padded={false} className="mt-2 px-1 lg:mt-4 lg:px-6">
-            <View className="flex-row flex-wrap">
-              {nearby.map((place) => (
-                <View key={place.id} className="w-full lg:w-1/2 lg:px-2">
-                  <PlaceRow place={place} distanceMeters={place.distance} />
-                </View>
-              ))}
-            </View>
-          </Container>
+          {nearby.isPending ? (
+            <LoadingState />
+          ) : nearby.isError ? (
+            <ErrorState onRetry={() => nearby.refetch()} />
+          ) : (
+            <Container padded={false} className="mt-2 px-1 lg:mt-4 lg:px-6">
+              <View className="flex-row flex-wrap">
+                {nearby.data.map((place) => (
+                  <View key={place.id} className="w-full lg:w-1/2 lg:px-2">
+                    <PlaceRow place={place} distanceMeters={place.distance} />
+                  </View>
+                ))}
+              </View>
+            </Container>
+          )}
         </View>
       </ScrollView>
     </Screen>

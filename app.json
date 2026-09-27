@@ -32,6 +32,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Noteo utilise votre position pour vous montrer les lieux les mieux notés près de vous."
+        }
       ]
     ],
     "experiments": {

@@ -41,3 +41,7 @@ example
 # generated native folders
 /ios
 /android
+
+# Import OpenStreetMap : téléchargements et SQL générés (scripts/import-osm.mjs)
+scripts/.osm-cache/
+supabase/import/

@@ -11,7 +11,7 @@ export const CATEGORIES: Category[] = [
     nameMg: 'Toeram-pisakafoanana',
     icon: 'restaurant',
     tint: { bgClass: 'bg-orange-100 dark:bg-orange-500/20', color: '#EA580C' },
-    subcategories: ['Restaurant', 'Gargote', 'Fast-food', 'Pâtisserie', 'Bar'],
+    subcategories: ['Restaurant', 'Gargote', 'Fast-food', 'Pâtisserie', 'Café', 'Bar'],
     criteria: [
       { slug: 'gout', labelFr: 'Goût', labelMg: 'Tsiro' },
       { slug: 'prix', labelFr: 'Rapport qualité-prix', labelMg: 'Vidiny' },
@@ -24,7 +24,15 @@ export const CATEGORIES: Category[] = [
     nameMg: 'Fahasalamana',
     icon: 'medkit',
     tint: { bgClass: 'bg-sky-100 dark:bg-sky-500/20', color: '#0284C7' },
-    subcategories: ['Médecin généraliste', 'Dentiste', 'Clinique', 'Pharmacie', 'Laboratoire'],
+    subcategories: [
+      'Médecin généraliste',
+      'Dentiste',
+      'Clinique',
+      'Hôpital',
+      'Centre de santé',
+      'Pharmacie',
+      'Laboratoire',
+    ],
     criteria: [
       { slug: 'ecoute', labelFr: 'Écoute', labelMg: 'Fihainoana' },
       { slug: 'competence', labelFr: 'Compétence', labelMg: 'Fahaiza-manao' },
@@ -34,7 +42,7 @@ export const CATEGORIES: Category[] = [
   {
     slug: 'garage',
     nameFr: 'Garages',
-    nameMg: 'Toeram-panamboarana',
+    nameMg: 'Toeram-panamboarana fiara',
     icon: 'car-sport',
     tint: { bgClass: 'bg-violet-100 dark:bg-violet-500/20', color: '#7C3AED' },
     subcategories: ['Garage auto', 'Mécanicien', 'Carrosserie', 'Pneus', 'Lavage'],

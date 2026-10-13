@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
 import { CriteriaBars } from '@/components/ui/criteria-bars';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PendingBadge } from '@/components/ui/pending-badge';
 import { PlaceCover } from '@/components/ui/place-card';
 import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { RatingDistribution } from '@/components/ui/rating-distribution';
@@ -16,8 +17,10 @@ import { StarRating } from '@/components/ui/star-rating';
 import { CATEGORY_BY_SLUG } from '@/constants/categories';
 import { useIsDesktop } from '@/hooks/use-breakpoint';
 import { useLocation } from '@/hooks/use-location';
-import { usePlace, usePlaceReviews } from '@/hooks/use-places';
+import { useMyReview, usePlace, usePlaceReviews } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
+import { REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
+import { useSession } from '@/lib/session';
 import { distanceMeters, formatDistance, formatRating, timeAgo } from '@/lib/utils';
 
 export default function PlaceScreen() {
@@ -30,6 +33,9 @@ export default function PlaceScreen() {
   const location = useLocation();
   const placeQuery = usePlace(id);
   const reviewsQuery = usePlaceReviews(id);
+  const user = useSession();
+  const { data: myReview } = useMyReview(id, user?.id);
+  const reviewLabel = myReview ? 'Modifier mon avis' : 'Donner mon avis';
   const place = placeQuery.data;
 
   if (placeQuery.isPending) {
@@ -63,7 +69,10 @@ export default function PlaceScreen() {
   }
 
   const category = CATEGORY_BY_SLUG[place.categorySlug];
-  const distance = location ? distanceMeters(location.origin, place) : undefined;
+  const distance =
+    location && place.lat !== null && place.lng !== null
+      ? distanceMeters(location.origin, { lat: place.lat, lng: place.lng })
+      : undefined;
   const hasReviews = place.ratingCount > 0;
   const reviews = reviewsQuery.data ?? [];
 
@@ -91,6 +100,18 @@ export default function PlaceScreen() {
       </Text>
     </View>
   );
+
+  const pendingNotice =
+    place.status === 'pending' ? (
+      <View className="gap-2 rounded-card bg-amber-50 p-4 dark:bg-amber-500/10">
+        <PendingBadge onSiteCount={place.onSiteCount} />
+        <Text className="text-sm leading-5 text-ink-700 dark:text-ink-200">
+          {place.lat === null
+            ? 'Lieu proposé par un membre, en attente de vérification par un administrateur.'
+            : `Lieu proposé par un membre. Il sera confirmé et classé après ${REQUIRED_ON_SITE_REVIEWS} avis donnés sur place : si vous y êtes, votre avis compte.`}
+        </Text>
+      </View>
+    ) : null;
 
   const ratingBlock = (
     <View className="flex-row gap-6 rounded-card border border-ink-100 p-4 dark:border-white/10">
@@ -229,13 +250,15 @@ export default function PlaceScreen() {
                 </View>
                 <View className="mt-5 flex-row">
                   <Button
-                    label="Donner mon avis"
+                    label={reviewLabel}
                     icon="star"
                     onPress={() => router.push(`/review/new?placeId=${place.id}`)}
                   />
                 </View>
               </View>
             </View>
+
+            {pendingNotice && <View className="mt-8 max-w-2xl">{pendingNotice}</View>}
 
             {/* Notes et coordonnées côte à côte */}
             <View className="mt-10 flex-row gap-6">
@@ -279,9 +302,11 @@ export default function PlaceScreen() {
             {place.name}
           </Text>
 
+          {pendingNotice && <View className="mt-5">{pendingNotice}</View>}
+
           <View className="mt-5">{ratingBlock}</View>
 
-          <View className="mt-7">{criteriaBlock}</View>
+          {criteriaBlock && <View className="mt-7">{criteriaBlock}</View>}
 
           <View className="mt-7">{contactBlock}</View>
 
@@ -296,7 +321,7 @@ export default function PlaceScreen() {
         style={{ paddingBottom: insets.bottom + 12 }}
         className="absolute inset-x-0 bottom-0 border-t border-ink-100 bg-surface px-5 pt-3 dark:border-white/10 dark:bg-surface-dark">
         <Button
-          label="Donner mon avis"
+          label={reviewLabel}
           icon="star"
           fullWidth
           onPress={() => router.push(`/review/new?placeId=${place.id}`)}

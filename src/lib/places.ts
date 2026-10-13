@@ -2,12 +2,16 @@
  * Conversion des lignes Supabase (snake_case, colonnes nullables) vers le modèle
  * de l'app (src/types). Les écrans ne manipulent jamais les lignes brutes.
  */
-import type { CategorySlug, Place, Review } from '@/types';
+import type { CategorySlug, Place, PlaceStatus, Review } from '@/types';
 import type { Database, Json } from '@/types/database';
 
 export type SortMode = 'rating' | 'distance';
 
-export type PlaceWithDistance = Place & { distance: number };
+/** Avis donnés sur place nécessaires pour publier un lieu proposé (voir la migration). */
+export const REQUIRED_ON_SITE_REVIEWS = 3;
+
+/** `distance` absente si le lieu n'a pas de position. */
+export type PlaceWithDistance = Place & { distance?: number };
 
 type PlaceRow = Database['public']['Tables']['places']['Row'];
 type NearbyRow = Database['public']['Functions']['nearby_places']['Returns'][number];
@@ -48,18 +52,20 @@ export function mapPlace(row: PlaceLike): Place {
     address: row.address ?? undefined,
     phone: row.phone ?? undefined,
     coverUrl: row.cover_url ?? undefined,
-    lat: row.lat ?? 0,
-    lng: row.lng ?? 0,
+    lat: row.lat ?? null,
+    lng: row.lng ?? null,
     ratingAvg: Number(row.rating_avg ?? 0),
     ratingCount: row.rating_count ?? 0,
     criteriaAvgs: toNumberRecord(row.criteria_avgs),
     distribution: toDistribution(row.rating_distribution),
     osmId: row.osm_id ?? undefined,
+    status: (row.status ?? 'published') as PlaceStatus,
+    onSiteCount: row.on_site_count ?? 0,
   };
 }
 
 export function mapNearbyPlace(row: NearbyRow): PlaceWithDistance {
-  return { ...mapPlace(row), distance: row.distance_m };
+  return { ...mapPlace(row), distance: row.distance_m ?? undefined };
 }
 
 type ReviewRow = {

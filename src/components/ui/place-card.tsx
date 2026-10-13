@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
+import { PendingBadge } from '@/components/ui/pending-badge';
 import { RatingBadge } from '@/components/ui/rating-badge';
 import { StarRating } from '@/components/ui/star-rating';
 import { CATEGORY_BY_SLUG } from '@/constants/categories';
@@ -121,14 +122,18 @@ export function PlaceRow({ place, distanceMeters, rank }: PlaceRowProps) {
             {placeSubtitle(place, category.nameFr)}
             {distanceMeters !== undefined ? ` · ${formatDistance(distanceMeters)}` : ''}
           </Text>
-          <View className="mt-1.5 flex-row items-center gap-2">
-            <StarRating value={place.ratingAvg} size="sm" />
-            <Text className="text-xs text-ink-500 dark:text-ink-300">
-              {place.ratingCount > 0
-                ? `${formatRating(place.ratingAvg)} · ${place.ratingCount} avis`
-                : 'Pas encore d\'avis'}
-            </Text>
-          </View>
+          {place.status === 'pending' ? (
+            <PendingBadge onSiteCount={place.onSiteCount} className="mt-1.5" />
+          ) : (
+            <View className="mt-1.5 flex-row items-center gap-2">
+              <StarRating value={place.ratingAvg} size="sm" />
+              <Text className="text-xs text-ink-500 dark:text-ink-300">
+                {place.ratingCount > 0
+                  ? `${formatRating(place.ratingAvg)} · ${place.ratingCount} avis`
+                  : 'Pas encore d\'avis'}
+              </Text>
+            </View>
+          )}
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
       </Pressable>

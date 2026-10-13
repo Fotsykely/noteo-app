@@ -28,7 +28,7 @@ export default function SearchScreen() {
   const idle = search.trim().length === 0 && !category;
 
   const results = useNearbyPlaces(
-    { search: debouncedSearch, category },
+    { search: debouncedSearch, category, includePending: true },
     { limit: 50, enabled: !idle }
   );
 

@@ -24,6 +24,13 @@ export type Category = {
 
 export type Coordinates = { lat: number; lng: number };
 
+/**
+ * - `pending`   : proposé par un utilisateur, « à confirmer » (3 avis sur place requis)
+ * - `published` : visible partout, classé
+ * - `rejected`  : retiré (fermé, doublon, erroné)
+ */
+export type PlaceStatus = 'pending' | 'published' | 'rejected';
+
 export type Place = {
   id: string;
   name: string;
@@ -36,8 +43,9 @@ export type Place = {
   address?: string;
   phone?: string;
   coverUrl?: string;
-  lat: number;
-  lng: number;
+  /** Nulles pour un lieu proposé sans GPS, en attente d'un admin. */
+  lat: number | null;
+  lng: number | null;
   ratingAvg: number;
   ratingCount: number;
   /** Moyenne par critère, indexée par slug de critère */
@@ -46,6 +54,9 @@ export type Place = {
   distribution: [number, number, number, number, number];
   /** Présent si la fiche vient d'OpenStreetMap (attribution ODbL à afficher). */
   osmId?: string;
+  status: PlaceStatus;
+  /** Comptes différents l'ayant noté sur place ; 3 valident un lieu à confirmer. */
+  onSiteCount: number;
 };
 
 export type Review = {

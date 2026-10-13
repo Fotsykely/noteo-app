@@ -21,7 +21,7 @@ export default function AddScreen() {
   const debouncedSearch = useDebouncedValue(search.trim());
   const tooShort = search.trim().length < 2;
   const results = useNearbyPlaces(
-    { search: debouncedSearch },
+    { search: debouncedSearch, includePending: true },
     { limit: 20, enabled: debouncedSearch.length >= 2 }
   );
 

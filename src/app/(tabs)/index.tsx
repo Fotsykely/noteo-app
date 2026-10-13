@@ -22,7 +22,7 @@ export default function HomeScreen() {
 
   const location = useLocation();
   const topRated = useNearbyPlaces({ sort: 'rating' }, { limit: 8 });
-  const nearby = useNearbyPlaces({ sort: 'distance' }, { limit: 6 });
+  const nearby = useNearbyPlaces({ sort: 'distance', includePending: true }, { limit: 6 });
   const counts = useCategoryCounts();
 
   const nearbySubtitle =

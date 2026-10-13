@@ -12,7 +12,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -83,6 +83,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           name: string
+          on_site_count: number
           osm_id: string | null
           phone: string | null
           rating_avg: number
@@ -105,6 +106,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           name: string
+          on_site_count?: number
           osm_id?: string | null
           phone?: string | null
           rating_avg?: number
@@ -127,6 +129,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           name?: string
+          on_site_count?: number
           osm_id?: string | null
           phone?: string | null
           rating_avg?: number
@@ -184,9 +187,12 @@ export type Database = {
           created_at: string
           criteria: Json
           id: string
+          on_site: boolean
           place_id: string
           rating: number
           updated_at: string
+          visit_lat: number | null
+          visit_lng: number | null
         }
         Insert: {
           author_id?: string
@@ -194,9 +200,12 @@ export type Database = {
           created_at?: string
           criteria?: Json
           id?: string
+          on_site?: boolean
           place_id: string
           rating: number
           updated_at?: string
+          visit_lat?: number | null
+          visit_lng?: number | null
         }
         Update: {
           author_id?: string
@@ -204,9 +213,12 @@ export type Database = {
           created_at?: string
           criteria?: Json
           id?: string
+          on_site?: boolean
           place_id?: string
           rating?: number
           updated_at?: string
+          visit_lat?: number | null
+          visit_lng?: number | null
         }
         Relationships: [
           {
@@ -243,10 +255,19 @@ export type Database = {
         Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
         Returns: number
       }
+      has_role: { Args: { p_role: string }; Returns: boolean }
+      list_districts: {
+        Args: { p_category?: string }
+        Returns: {
+          name: string
+          place_count: number
+        }[]
+      }
       nearby_places: {
         Args: {
           p_category?: string
           p_district?: string
+          p_include_pending?: boolean
           p_lat: number
           p_limit?: number
           p_lng: number
@@ -267,11 +288,13 @@ export type Database = {
           lat: number
           lng: number
           name: string
+          on_site_count: number
           phone: string
           rating_avg: number
           rating_count: number
           rating_distribution: number[]
           score: number
+          status: string
           subcategory: string
         }[]
       }

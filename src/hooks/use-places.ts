@@ -15,6 +15,8 @@ export type PlaceFilters = {
   district?: string | null;
   search?: string;
   sort?: SortMode;
+  /** Inclure les lieux « à confirmer » (recherche, « Près de vous ») ; jamais dans un classement. */
+  includePending?: boolean;
 };
 
 const RANKING_PAGE_SIZE = 30;
@@ -36,6 +38,7 @@ async function fetchNearby(origin: Coordinates, filters: PlaceFilters, limit: nu
     p_sort: filters.sort ?? 'rating',
     p_limit: limit,
     p_offset: offset,
+    p_include_pending: filters.includePending ?? false,
   });
   if (error) throw error;
   return data.map(mapNearbyPlace);
@@ -98,6 +101,24 @@ export function usePlaceReviews(placeId: string | undefined) {
       return data.map(mapReview);
     },
     enabled: !!placeId,
+  });
+}
+
+/** L'avis de l'utilisateur connecté sur ce lieu, s'il en a déjà donné un (un seul par lieu). */
+export function useMyReview(placeId: string | undefined, userId: string | undefined) {
+  return useQuery({
+    queryKey: ['my-review', placeId, userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('id, rating, comment, criteria')
+        .eq('place_id', placeId!)
+        .eq('author_id', userId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!placeId && !!userId,
   });
 }
 

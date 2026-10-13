@@ -56,6 +56,26 @@ async function locate(): Promise<UserLocation> {
 }
 
 /**
+ * Position fraîche de l'appareil, pour situer un lieu proposé ou vérifier qu'un avis
+ * est donné sur place. Contrairement à `useLocation`, pas de dernière position
+ * connue (elle peut dater de dix minutes et d'un autre quartier) ni de repli sur le
+ * centre : `null` si elle est indisponible.
+ */
+export async function getVisitPosition(): Promise<Coordinates | null> {
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') return null;
+    const position = await withTimeout(
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+      15_000
+    );
+    return position ? { lat: position.coords.latitude, lng: position.coords.longitude } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Position de l'utilisateur, partagée par tous les écrans (une seule demande
  * d'autorisation). `null` tant qu'elle n'est pas connue : les requêtes qui en
  * dépendent attendent, pour ne pas charger deux fois la même liste.

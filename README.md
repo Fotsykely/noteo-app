@@ -1,36 +1,43 @@
 # Noteo
 
-Application mobile d'avis sur les services locaux à Madagascar — « note-le » en malgache.
+Mobile app to find and review the best local services in Madagascar.
+*"Noteo" comes from Malagasy, meaning "rate it".*
 
-MVP : **Antananarivo**, trois catégories (restaurants, santé, garages). L'app répond à une
-question simple : *quel est le mieux noté près de moi, dans cette catégorie ?*
+The MVP focuses on Antananarivo and three categories (restaurants, health, garages), and answers one simple question: **what's the best-rated place near me, in this category?**
 
-## Démarrer
+## Features
 
-```bash
-npm install
-npm start
-```
+- Browse places by category and district, sorted by rating
+- Location-based results ("near me") with Expo Location
+- User-proposed places, confirmed once they receive 3 on-site reviews
+- Place catalogue imported from OpenStreetMap into Supabase
+- Responsive layout with a sidebar navigation on desktop (web)
 
-Puis scannez le QR code avec **Expo Go** (Android ou iOS). Aucun Xcode ni Android Studio
-n'est nécessaire.
+## Tech stack
 
-## Où en est le projet
+- **Expo** · **React Native** · **TypeScript**
+- **Expo Router** (file-based routing)
+- **NativeWind** (Tailwind CSS for React Native)
+- **TanStack Query** for data fetching and caching
+- **Supabase**: Postgres + PostGIS, Auth, Storage
 
-Les écrans sont complets et navigables, mais alimentés par des **données factices**
-(`src/data/mock.ts`) : aucun backend n'est encore branché. La suite (Supabase, catalogue réel,
-authentification, dépôt d'avis) est décrite dans [AGENTS.md](AGENTS.md).
+## Getting started
 
-## Stack
+    npm install
+    npm start
 
-- Expo SDK 57 · React Native 0.86 · TypeScript
-- Expo Router (routage par fichiers)
-- NativeWind v4 (Tailwind)
-- Supabase — Postgres + PostGIS, Auth, Storage (à partir de l'Étape 2)
+Then scan the QR code with Expo Go (Android or iOS).
 
-## Vérifications
+## Project status
 
-```bash
-npx tsc --noEmit    # typecheck
-npx expo export --platform android   # vérifie que l'app bundle réellement
-```
+🚧 Work in progress. Screens and the Supabase catalogue are in place. Next steps: authentication and review submission.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/s-01.jpg" width="250" alt="Accueil" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/s-02.jpg" width="250" alt="Classements" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/s-03.jpg" width="250" alt="Fiche d'un lieu" />
+</p>

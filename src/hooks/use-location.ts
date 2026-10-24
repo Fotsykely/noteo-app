@@ -1,5 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
+import { useCallback } from 'react';
+import { Linking } from 'react-native';
 
 import { SERVICE_RADIUS_M, TANA_CENTER } from '@/constants/geo';
 import { distanceMeters } from '@/lib/utils';
@@ -30,11 +32,16 @@ const withTimeout = <T>(promise: Promise<T>, ms: number) =>
 
 async function locate(): Promise<UserLocation> {
   try {
-    const permission = await withTimeout(
-      Location.requestForegroundPermissionsAsync(),
-      PERMISSION_TIMEOUT_MS
-    );
-    if (permission?.status !== 'granted') return fallback('denied');
+    // On ne pose la question qu'une fois : une permission déjà refusée est relue en
+    // silence (sinon l'écran rouvrirait la demande à chaque retour sur l'accueil).
+    // C'est le bouton « Activer » qui la redemande explicitement.
+    let permission = await Location.getForegroundPermissionsAsync();
+    if (permission.status === Location.PermissionStatus.UNDETERMINED) {
+      permission =
+        (await withTimeout(Location.requestForegroundPermissionsAsync(), PERMISSION_TIMEOUT_MS)) ??
+        permission;
+    }
+    if (permission.status !== Location.PermissionStatus.GRANTED) return fallback('denied');
 
     // La dernière position connue est instantanée ; la position courante peut
     // prendre plusieurs secondes sur Android.
@@ -84,8 +91,34 @@ export function useLocation(): UserLocation | null {
   const { data } = useQuery({
     queryKey: ['location'],
     queryFn: locate,
-    staleTime: 5 * 60_000,
+    // Position refusée : toujours « périmée », donc relue au retour dans l'app (par
+    // exemple après avoir activé la localisation dans les réglages du téléphone).
+    staleTime: (query) => (query.state.data?.source === 'denied' ? 0 : 5 * 60_000),
     retry: false,
   });
   return data ?? null;
+}
+
+/**
+ * Action du bouton « Activer la localisation » : redemande l'autorisation, ou ouvre
+ * les réglages de l'appareil quand le système ne la redemande plus (refus définitif,
+ * « Ne plus demander » sur Android).
+ */
+export function useEnableLocation() {
+  const queryClient = useQueryClient();
+
+  return useCallback(async () => {
+    try {
+      const current = await Location.getForegroundPermissionsAsync();
+      if (current.status !== Location.PermissionStatus.GRANTED && !current.canAskAgain) {
+        // Au retour dans l'app, la position refusée est relue (voir staleTime).
+        await Linking.openSettings();
+        return;
+      }
+      await Location.requestForegroundPermissionsAsync();
+    } catch {
+      // Web : pas de réglages à ouvrir, le navigateur gère l'autorisation.
+    }
+    await queryClient.invalidateQueries({ queryKey: ['location'] });
+  }, [queryClient]);
 }

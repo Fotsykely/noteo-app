@@ -12,7 +12,7 @@ import { CATEGORY_BY_SLUG } from '@/constants/categories';
 import { getVisitPosition } from '@/hooks/use-location';
 import { useMyReview, usePlace } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
-import { REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
+import { ON_SITE_RADIUS_M, REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
 import { useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import { noWebOutline } from '@/lib/utils';
@@ -35,7 +35,12 @@ export default function NewReviewScreen() {
   const [busy, setBusy] = useState<'locating' | 'saving' | null>(null);
   const [error, setError] = useState<string | null>(null);
   // État d'avant l'envoi : le lieu est rechargé ensuite, il faut savoir ce qui a changé.
-  const [result, setResult] = useState<{ onSite: boolean; wasPending: boolean; wasUpdate: boolean } | null>(null);
+  const [result, setResult] = useState<{
+    onSite: boolean;
+    hadPosition: boolean;
+    wasPending: boolean;
+    wasUpdate: boolean;
+  } | null>(null);
 
   // Un seul avis par lieu : s'il existe, le formulaire le reprend pour le modifier
   // (ajustement pendant le rendu, une seule fois par avis).
@@ -115,7 +120,7 @@ export default function NewReviewScreen() {
       queryClient.invalidateQueries({ queryKey: ['my-review', place.id] }),
       queryClient.invalidateQueries({ queryKey: ['places'] }),
     ]);
-    setResult({ onSite: data.on_site, wasPending, wasUpdate: !!myReview });
+    setResult({ onSite: data.on_site, hadPosition: visit !== null, wasPending, wasUpdate: !!myReview });
   }
 
   if (result) {
@@ -125,7 +130,9 @@ export default function NewReviewScreen() {
         ? 'Grâce à votre avis, le lieu est confirmé : il apparaît désormais dans les classements.'
         : result.onSite
           ? `Votre avis compte pour confirmer ce lieu : ${Math.min(place.onSiteCount, REQUIRED_ON_SITE_REVIEWS)}/${REQUIRED_ON_SITE_REVIEWS} avis donnés sur place.`
-          : "Votre avis est publié. Comme vous n'étiez pas sur place, il ne compte pas pour confirmer le lieu.";
+          : result.hadPosition
+            ? `Votre avis est publié. Vous sembliez à plus de ${ON_SITE_RADIUS_M} m du lieu : il ne compte pas pour le confirmer.`
+            : "Votre avis est publié. Votre position n'a pas pu être vérifiée : il ne compte donc pas pour confirmer le lieu.";
 
     return (
       <View className="flex-1 bg-surface dark:bg-surface-dark">

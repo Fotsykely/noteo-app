@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -8,9 +8,11 @@ import { DistrictPicker } from '@/components/district-picker';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/category-chip';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/query-state';
 import { CATEGORIES, CATEGORY_BY_SLUG } from '@/constants/categories';
 import { getVisitPosition } from '@/hooks/use-location';
-import { useHasRole } from '@/hooks/use-role';
+import { usePlace } from '@/hooks/use-places';
+import { useHasRole, useIsModerator } from '@/hooks/use-role';
 import { useColors } from '@/hooks/use-theme';
 import { REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
 import { useSession } from '@/lib/session';
@@ -62,6 +64,12 @@ export default function NewPlaceScreen() {
   const queryClient = useQueryClient();
   const user = useSession();
   const isAdmin = useHasRole('admin');
+  const isModerator = useIsModerator();
+
+  // `?id=…` : un modérateur corrige une fiche existante au lieu d'en créer une.
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editing = !!id;
+  const { data: editedPlace, isPending: loadingPlace } = usePlace(id);
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState<CategorySlug | null>(null);
@@ -72,6 +80,7 @@ export default function NewPlaceScreen() {
   const [position, setPosition] = useState<PositionState>({ status: 'locating' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [publishNow, setPublishNow] = useState(false);
 
   // On propose un lieu depuis place : la position du téléphone devient celle du lieu.
   const fetchPosition = useCallback(
@@ -83,9 +92,28 @@ export default function NewPlaceScreen() {
   );
 
   // L'état initial est déjà « localisation en cours » : l'effet ne fait que lancer la recherche.
+  // En correction, la position de la fiche est conservée tant que le modérateur ne choisit
+  // pas explicitement la sienne : il peut corriger à distance.
   useEffect(() => {
-    if (user) fetchPosition();
-  }, [user, fetchPosition]);
+    if (user && !editing) fetchPosition();
+  }, [user, editing, fetchPosition]);
+
+  // Préremplissage, une seule fois par fiche (ajustement pendant le rendu, sans effet).
+  const [prefilledId, setPrefilledId] = useState<string | null>(null);
+  if (editedPlace && prefilledId !== editedPlace.id) {
+    setPrefilledId(editedPlace.id);
+    setName(editedPlace.name);
+    setCategory(editedPlace.categorySlug);
+    setSubcategory(editedPlace.subcategory ?? null);
+    setDistrict(editedPlace.district);
+    setAddress(editedPlace.address ?? '');
+    setPhone(editedPlace.phone ?? '');
+    setPosition(
+      editedPlace.lat !== null && editedPlace.lng !== null
+        ? { status: 'found', coords: { lat: editedPlace.lat, lng: editedPlace.lng } }
+        : { status: 'unavailable' }
+    );
+  }
 
   function retryLocate() {
     setPosition({ status: 'locating' });
@@ -101,6 +129,44 @@ export default function NewPlaceScreen() {
 
     setBusy(true);
     setError(null);
+
+    if (editing) {
+      const { error } = await supabase
+        .from('places')
+        .update({
+          name: name.trim(),
+          category_slug: category,
+          subcategory,
+          district,
+          address: address.trim() || null,
+          phone: phone.trim() || null,
+          lat: coords?.lat ?? null,
+          lng: coords?.lng ?? null,
+        })
+        .eq('id', id);
+
+      // Un lieu « à confirmer » corrigé par un modérateur peut être publié sans attendre
+      // ses 3 avis sur place (la base exige une position pour cela).
+      const publish =
+        !error && publishNow && coords && editedPlace?.status === 'pending'
+          ? await supabase.rpc('moderate_place', { p_place_id: id!, p_status: 'published' })
+          : null;
+      setBusy(false);
+
+      if (error || publish?.error) {
+        setError("La fiche n'a pas pu être corrigée. Vérifiez votre connexion et réessayez.");
+        return;
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['places'] }),
+        queryClient.invalidateQueries({ queryKey: ['place', id] }),
+        queryClient.invalidateQueries({ queryKey: ['districts'] }),
+        queryClient.invalidateQueries({ queryKey: ['moderation'] }),
+      ]);
+      router.back();
+      return;
+    }
+
     const { data, error } = await supabase
       .from('places')
       .insert({
@@ -128,6 +194,28 @@ export default function NewPlaceScreen() {
     router.replace(`/review/new?placeId=${data.id}`);
   }
 
+  if (editing && user && !isModerator) {
+    return (
+      <View className="flex-1 bg-surface dark:bg-surface-dark">
+        <EmptyState
+          icon="lock-closed-outline"
+          title="Réservé aux modérateurs"
+          description="Pour signaler une erreur sur ce lieu, utilisez « Signaler un problème » sur sa fiche."
+          actionLabel="Retour"
+          onAction={() => router.back()}
+        />
+      </View>
+    );
+  }
+
+  if (editing && user && loadingPlace) {
+    return (
+      <View className="flex-1 justify-center bg-surface dark:bg-surface-dark">
+        <LoadingState />
+      </View>
+    );
+  }
+
   if (!user) {
     return (
       <View className="flex-1 bg-surface dark:bg-surface-dark">
@@ -146,6 +234,7 @@ export default function NewPlaceScreen() {
     <KeyboardAvoidingView
       className="flex-1 bg-surface dark:bg-surface-dark"
       behavior={Platform.select({ ios: 'padding', default: undefined })}>
+      <Stack.Screen options={{ title: editing ? 'Corriger la fiche' : 'Ajouter un lieu' }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -157,7 +246,9 @@ export default function NewPlaceScreen() {
           alignSelf: 'center',
         }}>
         <Text className="text-sm leading-5 text-ink-500 dark:text-ink-300">
-          {isAdmin
+          {editing
+            ? 'Corrigez les informations de ce lieu. Les changements sont visibles tout de suite.'
+            : isAdmin
             ? 'Ajoutez un lieu absent du catalogue. En tant qu\'administrateur, il est publié directement.'
             : `Ajoutez un lieu absent du catalogue. Il apparaîtra « à confirmer » jusqu'à ce que ${REQUIRED_ON_SITE_REVIEWS} personnes l'aient noté sur place, vous compris.`}
         </Text>
@@ -174,18 +265,26 @@ export default function NewPlaceScreen() {
               {position.status === 'locating'
                 ? 'Localisation en cours…'
                 : position.status === 'found'
-                  ? 'Position du lieu enregistrée'
-                  : 'Position indisponible'}
+                  ? editing
+                    ? 'Position du lieu'
+                    : 'Position du lieu enregistrée'
+                  : editing
+                    ? 'Ce lieu n\'a pas de position'
+                    : 'Position indisponible'}
             </Text>
             <Text className="mt-0.5 text-xs leading-4 text-ink-500 dark:text-ink-300">
-              {position.status === 'unavailable'
-                ? 'Le lieu sera vérifié par un administrateur avant d\'être publié. Activez la localisation pour qu\'il soit confirmé par les avis.'
-                : 'Proposez le lieu depuis place : la position de votre téléphone devient celle du lieu.'}
+              {editing
+                ? 'Sans position, un lieu ne peut ni être publié ni vérifié par les avis sur place. Si vous êtes sur place, utilisez votre position.'
+                : position.status === 'unavailable'
+                  ? 'Le lieu sera vérifié par un administrateur avant d\'être publié. Activez la localisation pour qu\'il soit confirmé par les avis.'
+                  : 'Proposez le lieu depuis place : la position de votre téléphone devient celle du lieu.'}
             </Text>
           </View>
-          {position.status === 'unavailable' && (
+          {(position.status === 'unavailable' || editing) && position.status !== 'locating' && (
             <Pressable onPress={retryLocate} accessibilityRole="button" hitSlop={8} className="active:opacity-60">
-              <Text className="text-sm font-semibold text-brand-500">Réessayer</Text>
+              <Text className="text-sm font-semibold text-brand-500">
+                {editing ? 'Ma position' : 'Réessayer'}
+              </Text>
             </Pressable>
           )}
         </View>
@@ -249,8 +348,21 @@ export default function NewPlaceScreen() {
           optional
         />
 
+        {editing && editedPlace?.status === 'pending' && position.status === 'found' && (
+          <View className="mt-6 flex-row items-center justify-between gap-3 rounded-card bg-ink-50 p-4 dark:bg-white/5">
+            <Text className="flex-1 text-sm leading-5 text-ink-700 dark:text-ink-200">
+              Ce lieu est « à confirmer ». Le publier tout de suite, sans attendre les avis sur place ?
+            </Text>
+            <Chip
+              label={publishNow ? 'Oui, publier' : 'Non'}
+              selected={publishNow}
+              onPress={() => setPublishNow(!publishNow)}
+            />
+          </View>
+        )}
+
         <Button
-          label={isAdmin ? 'Publier ce lieu' : 'Proposer ce lieu'}
+          label={editing ? 'Enregistrer les corrections' : isAdmin ? 'Publier ce lieu' : 'Proposer ce lieu'}
           fullWidth
           loading={busy}
           disabled={!canSubmit}

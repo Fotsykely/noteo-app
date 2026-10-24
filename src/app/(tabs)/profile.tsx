@@ -6,6 +6,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
 import { Screen } from '@/components/ui/screen';
+import { useModerationQueue } from '@/hooks/use-moderation';
+import { useIsModerator } from '@/hooks/use-role';
 import { useColors } from '@/hooks/use-theme';
 import { signOut, useSession } from '@/lib/session';
 import type { IoniconName } from '@/types';
@@ -36,6 +38,9 @@ function Row({
 export default function ProfileScreen() {
   const router = useRouter();
   const user = useSession();
+  const isModerator = useIsModerator();
+  const queue = useModerationQueue();
+  const toReview = queue.data?.length ?? 0;
 
   return (
     <Screen>
@@ -85,6 +90,13 @@ export default function ProfileScreen() {
                 <Row icon="star-outline" label="Mes avis" />
                 <Row icon="bookmark-outline" label="Mes favoris" />
                 <Row icon="add-circle-outline" label="Lieux que j'ai ajoutés" />
+                {isModerator && (
+                  <Row
+                    icon="flag-outline"
+                    label={toReview > 0 ? `Modération (${toReview})` : 'Modération'}
+                    onPress={() => router.push('/moderation')}
+                  />
+                )}
               </View>
             </Container>
 

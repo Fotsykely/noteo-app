@@ -93,7 +93,7 @@ export function usePlaceReviews(placeId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
-        .select('id, place_id, rating, comment, criteria, created_at, author:profiles(display_name)')
+        .select('id, place_id, author_id, rating, comment, criteria, created_at, author:profiles(display_name)')
         .eq('place_id', placeId!)
         .order('created_at', { ascending: false })
         .limit(50);

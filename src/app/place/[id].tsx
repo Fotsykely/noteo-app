@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ReportSheet, type ReportTarget } from '@/components/report-sheet';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
@@ -18,6 +20,7 @@ import { CATEGORY_BY_SLUG } from '@/constants/categories';
 import { useIsDesktop } from '@/hooks/use-breakpoint';
 import { useLocation } from '@/hooks/use-location';
 import { useMyReview, usePlace, usePlaceReviews } from '@/hooks/use-places';
+import { useIsModerator } from '@/hooks/use-role';
 import { useColors } from '@/hooks/use-theme';
 import { REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
 import { useSession } from '@/lib/session';
@@ -37,6 +40,17 @@ export default function PlaceScreen() {
   const { data: myReview } = useMyReview(id, user?.id);
   const reviewLabel = myReview ? 'Modifier mon avis' : 'Donner mon avis';
   const place = placeQuery.data;
+  const isModerator = useIsModerator();
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+
+  // Signaler demande un compte : on évite les signalements anonymes.
+  function openReport(target: ReportTarget) {
+    if (!user) {
+      router.push('/auth/sign-in');
+      return;
+    }
+    setReportTarget(target);
+  }
 
   if (placeQuery.isPending) {
     return (
@@ -111,6 +125,15 @@ export default function PlaceScreen() {
             : `Lieu proposé par un membre. Il sera confirmé et classé après ${REQUIRED_ON_SITE_REVIEWS} avis donnés sur place : si vous y êtes, votre avis compte.`}
         </Text>
       </View>
+    ) : place.status === 'closed' || place.status === 'rejected' ? (
+      <View className="gap-1 rounded-card bg-red-50 p-4 dark:bg-red-500/10">
+        <Text className="text-sm font-semibold text-red-800 dark:text-red-300">
+          {place.status === 'closed' ? 'Lieu fermé' : 'Lieu retiré du catalogue'}
+        </Text>
+        <Text className="text-sm leading-5 text-ink-700 dark:text-ink-200">
+          Cette fiche n&apos;est plus visible du public : vous la voyez parce que vous modérez.
+        </Text>
+      </View>
     ) : null;
 
   const ratingBlock = (
@@ -159,6 +182,26 @@ export default function PlaceScreen() {
           <Text className="flex-1 text-sm font-medium text-brand-500">{place.phone}</Text>
         </Pressable>
       )}
+      <View className="flex-row flex-wrap gap-x-5 gap-y-2 pt-1">
+        <Pressable
+          onPress={() => openReport({ kind: 'place', placeId: place.id })}
+          accessibilityRole="button"
+          className="flex-row items-center gap-1.5 active:opacity-60">
+          <Ionicons name="flag-outline" size={15} color={colors.textMuted} />
+          <Text className="text-xs font-medium text-ink-500 dark:text-ink-300">
+            Signaler un problème
+          </Text>
+        </Pressable>
+        {isModerator && (
+          <Pressable
+            onPress={() => router.push(`/place/new?id=${place.id}`)}
+            accessibilityRole="button"
+            className="flex-row items-center gap-1.5 active:opacity-60">
+            <Ionicons name="create-outline" size={15} color={colors.brand} />
+            <Text className="text-xs font-semibold text-brand-500">Corriger la fiche</Text>
+          </Pressable>
+        )}
+      </View>
       {/* Attribution exigée par la licence ODbL des données OpenStreetMap. */}
       {place.osmId && (
         <Text className="text-xs text-ink-500 dark:text-ink-300">
@@ -195,6 +238,16 @@ export default function PlaceScreen() {
                 </Text>
               </View>
               <StarRating value={review.rating} size="sm" />
+              {review.authorId !== user?.id && (
+                <Pressable
+                  onPress={() => openReport({ kind: 'review', placeId: place.id, reviewId: review.id })}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Signaler cet avis"
+                  className="active:opacity-60">
+                  <Ionicons name="flag-outline" size={16} color={colors.textFaint} />
+                </Pressable>
+              )}
             </View>
             {review.comment && (
               <Text className="mt-3 text-sm leading-5 text-ink-700 dark:text-ink-200">
@@ -275,6 +328,7 @@ export default function PlaceScreen() {
             {reviewList}
           </Container>
         </ScrollView>
+        <ReportSheet target={reportTarget} onClose={() => setReportTarget(null)} />
       </View>
     );
   }
@@ -327,6 +381,8 @@ export default function PlaceScreen() {
           onPress={() => router.push(`/review/new?placeId=${place.id}`)}
         />
       </View>
+
+      <ReportSheet target={reportTarget} onClose={() => setReportTarget(null)} />
     </View>
   );
 }

@@ -129,10 +129,13 @@ export default function SignInScreen() {
         }}>
         {step === 'email' && (
           <>
-            <Text className="text-2xl font-bold text-ink dark:text-white">Connexion</Text>
+            <Text className="text-2xl font-bold text-ink dark:text-white">
+              Connexion ou inscription
+            </Text>
             <Text className="mt-1.5 text-sm leading-5 text-ink-500 dark:text-ink-300">
-              Un compte n&apos;est nécessaire que pour publier un avis. La consultation reste libre.
-              Nous vous envoyons un code par e-mail : pas de mot de passe à retenir.
+              Nouveau ? Votre compte est créé automatiquement. Un compte n&apos;est nécessaire que
+              pour publier un avis ; la consultation reste libre. Nous vous envoyons un code par
+              e-mail : pas de mot de passe à retenir.
             </Text>
 
             <TextInput

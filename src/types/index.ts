@@ -27,9 +27,10 @@ export type Coordinates = { lat: number; lng: number };
 /**
  * - `pending`   : proposé par un utilisateur, « à confirmer » (3 avis sur place requis)
  * - `published` : visible partout, classé
- * - `rejected`  : retiré (fermé, doublon, erroné)
+ * - `rejected`  : retiré (doublon, erroné, refusé)
+ * - `closed`    : a existé, a fermé (distinct de `rejected` : l'historique est gardé)
  */
-export type PlaceStatus = 'pending' | 'published' | 'rejected';
+export type PlaceStatus = 'pending' | 'published' | 'rejected' | 'closed';
 
 export type Place = {
   id: string;
@@ -62,6 +63,7 @@ export type Place = {
 export type Review = {
   id: string;
   placeId: string;
+  authorId: string;
   authorName: string;
   authorInitials: string;
   rating: number;

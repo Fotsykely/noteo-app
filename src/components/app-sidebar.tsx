@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
+import { useModerationQueue } from '@/hooks/use-moderation';
+import { useIsModerator } from '@/hooks/use-role';
 import { useColors } from '@/hooks/use-theme';
 import { cn } from '@/lib/utils';
 import type { IoniconName } from '@/types';
@@ -21,6 +23,14 @@ const ITEMS: NavItem[] = [
   { href: '/profile', label: 'Profil', icon: 'person-outline', iconActive: 'person' },
 ];
 
+/** Réservé aux admins et modérateurs. */
+const MODERATION_ITEM: NavItem = {
+  href: '/moderation',
+  label: 'Modération',
+  icon: 'flag-outline',
+  iconActive: 'flag',
+};
+
 function isActive(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname.startsWith(href);
 }
@@ -32,6 +42,9 @@ function isActive(pathname: string, href: string) {
 export function AppSidebar() {
   const pathname = usePathname();
   const colors = useColors();
+  const isModerator = useIsModerator();
+  const toReview = useModerationQueue().data?.length ?? 0;
+  const items = isModerator ? [...ITEMS, MODERATION_ITEM] : ITEMS;
 
   return (
     <View className="w-60 shrink-0 px-3 py-4">
@@ -45,7 +58,7 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <View className="gap-1">
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const active = isActive(pathname, item.href);
 
           return (
@@ -74,6 +87,11 @@ export function AppSidebar() {
                 )}>
                 {item.label}
               </Text>
+              {item.href === '/moderation' && toReview > 0 && (
+                <View className="ml-auto min-w-5 items-center rounded-pill bg-red-600 px-1.5 py-0.5">
+                  <Text className="text-[11px] font-bold text-white">{toReview}</Text>
+                </View>
+              )}
             </Pressable>
           );
         })}

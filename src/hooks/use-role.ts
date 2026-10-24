@@ -25,3 +25,24 @@ export function useHasRole(role: Role): boolean {
 
   return !!user && data === true;
 }
+
+/**
+ * Admin ou modérateur : accès à l'écran de modération. Comme pour `useHasRole`, la base
+ * vérifie elle-même le droit avant toute action.
+ */
+export function useIsModerator(): boolean {
+  const user = useSession();
+
+  const { data } = useQuery({
+    queryKey: ['role', user?.id, 'moderator-or-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('is_moderator');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 30 * 60_000,
+  });
+
+  return !!user && data === true;
+}

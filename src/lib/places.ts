@@ -10,6 +10,9 @@ export type SortMode = 'rating' | 'distance';
 /** Avis donnés sur place nécessaires pour publier un lieu proposé (voir la migration). */
 export const REQUIRED_ON_SITE_REVIEWS = 3;
 
+/** Distance maximale au lieu pour qu'un avis soit « sur place » (à garder égale à la migration). */
+export const ON_SITE_RADIUS_M = 300;
+
 /** `distance` absente si le lieu n'a pas de position. */
 export type PlaceWithDistance = Place & { distance?: number };
 
@@ -71,6 +74,7 @@ export function mapNearbyPlace(row: NearbyRow): PlaceWithDistance {
 type ReviewRow = {
   id: string;
   place_id: string;
+  author_id: string;
   rating: number;
   comment: string | null;
   criteria: Json;
@@ -83,6 +87,7 @@ export function mapReview(row: ReviewRow): Review {
   return {
     id: row.id,
     placeId: row.place_id,
+    authorId: row.author_id,
     authorName,
     authorInitials: initials(authorName),
     rating: row.rating,

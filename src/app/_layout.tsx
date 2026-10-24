@@ -52,6 +52,7 @@ export default function RootLayout() {
                 name="place/new"
                 options={{ presentation: 'modal', title: 'Ajouter un lieu' }}
               />
+              <Stack.Screen name="moderation" options={{ title: 'Modération' }} />
               <Stack.Screen
                 name="auth/sign-in"
                 options={{ presentation: 'modal', title: 'Connexion' }}

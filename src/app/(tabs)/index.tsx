@@ -11,7 +11,7 @@ import { SearchBar } from '@/components/ui/search-bar';
 import { SectionHeader } from '@/components/ui/section-header';
 import { CATEGORIES } from '@/constants/categories';
 import { useIsDesktop } from '@/hooks/use-breakpoint';
-import { useLocation } from '@/hooks/use-location';
+import { useEnableLocation, useLocation } from '@/hooks/use-location';
 import { useCategoryCounts, useNearbyPlaces } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
 
@@ -21,14 +21,13 @@ export default function HomeScreen() {
   const isDesktop = useIsDesktop();
 
   const location = useLocation();
+  const enableLocation = useEnableLocation();
   const topRated = useNearbyPlaces({ sort: 'rating' }, { limit: 8 });
   const nearby = useNearbyPlaces({ sort: 'distance', includePending: true }, { limit: 6 });
   const counts = useCategoryCounts();
 
   const nearbySubtitle =
-    location?.source === 'device'
-      ? 'Autour de votre position'
-      : 'Autour du centre-ville (position non partagée)';
+    location?.source === 'device' ? 'Autour de votre position' : "Autour d'Analakely, au centre-ville";
 
   return (
     <Screen>
@@ -124,6 +123,29 @@ export default function HomeScreen() {
           <Container>
             <SectionHeader title="Près de vous" subtitle={nearbySubtitle} />
           </Container>
+
+          {/* Sans position réelle, les distances partent d'Analakely : on le dit. */}
+          {location && location.source !== 'device' && (
+            <Container className="mt-3">
+              <View className="flex-row items-center gap-3 rounded-card bg-ink-50 p-3 dark:bg-white/5">
+                <Ionicons name="location-outline" size={18} color={colors.textMuted} />
+                <Text className="flex-1 text-xs leading-4 text-ink-700 dark:text-ink-300">
+                  {location.source === 'outside'
+                    ? "Vous semblez hors d'Antananarivo : les distances sont mesurées depuis Analakely."
+                    : 'Position non partagée : les distances sont mesurées depuis Analakely.'}
+                </Text>
+                {location.source === 'denied' && (
+                  <Pressable
+                    onPress={enableLocation}
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    className="active:opacity-60">
+                    <Text className="text-sm font-semibold text-brand-500">Activer</Text>
+                  </Pressable>
+                )}
+              </View>
+            </Container>
+          )}
           {nearby.isPending ? (
             <LoadingState />
           ) : nearby.isError ? (

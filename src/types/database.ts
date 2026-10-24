@@ -180,12 +180,81 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          place_id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          review_id: string | null
+          status: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          place_id: string
+          reason: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          review_id?: string | null
+          status?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          place_id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          review_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           author_id: string
           comment: string | null
           created_at: string
           criteria: Json
+          hidden: boolean
           id: string
           on_site: boolean
           place_id: string
@@ -199,6 +268,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           criteria?: Json
+          hidden?: boolean
           id?: string
           on_site?: boolean
           place_id: string
@@ -212,6 +282,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           criteria?: Json
+          hidden?: boolean
           id?: string
           on_site?: boolean
           place_id?: string
@@ -251,16 +322,49 @@ export type Database = {
         }
         Returns: number
       }
+      dismiss_reports: {
+        Args: { p_place_id: string; p_review_id?: string }
+        Returns: undefined
+      }
       distance_meters: {
         Args: { p_lat1: number; p_lat2: number; p_lng1: number; p_lng2: number }
         Returns: number
       }
       has_role: { Args: { p_role: string }; Returns: boolean }
+      is_moderator: { Args: never; Returns: boolean }
       list_districts: {
         Args: { p_category?: string }
         Returns: {
           name: string
           place_count: number
+        }[]
+      }
+      moderate_place: {
+        Args: { p_place_id: string; p_status: string }
+        Returns: undefined
+      }
+      moderate_review: {
+        Args: { p_hidden: boolean; p_review_id: string }
+        Returns: undefined
+      }
+      moderation_queue: {
+        Args: never
+        Returns: {
+          category_slug: string
+          comments: string[]
+          district: string
+          kind: string
+          latest_at: string
+          place_id: string
+          place_name: string
+          place_status: string
+          reasons: string[]
+          report_count: number
+          review_author: string
+          review_comment: string
+          review_hidden: boolean
+          review_id: string
+          review_rating: number
         }[]
       }
       nearby_places: {

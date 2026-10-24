@@ -3,17 +3,18 @@ import '@/global.css';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme, View } from 'react-native';
+import { Platform, useColorScheme, View } from 'react-native';
 
 import { AppSidebar } from '@/components/app-sidebar';
 import { navigationTheme } from '@/constants/theme';
-import { useIsDesktop } from '@/hooks/use-breakpoint';
+import { useHydrated, useIsDesktop } from '@/hooks/use-breakpoint';
 import { queryClient } from '@/lib/query-client';
 import { cn } from '@/lib/utils';
 
 export default function RootLayout() {
   const isDark = useColorScheme() === 'dark';
   const isDesktop = useIsDesktop();
+  const hydrated = useHydrated();
   const base = isDark ? DarkTheme : DefaultTheme;
   const colors = isDark ? navigationTheme.dark : navigationTheme.light;
 
@@ -26,7 +27,9 @@ export default function RootLayout() {
           les pages, y compris la fiche d'un lieu et les formulaires.
           Mobile : rien de tout cela, la navigation reste la barre d'onglets du bas.
         */}
-        <View className="flex-1 flex-row bg-ink-50 dark:bg-black">
+        <View
+          className="flex-1 flex-row bg-ink-50 dark:bg-black"
+          style={Platform.OS === 'web' && !hydrated ? { opacity: 0 } : undefined}>
           {isDesktop && <AppSidebar />}
 
           {/* `min-w-0` est indispensable : sans lui, un enfant de flex-row adopte en CSS la
@@ -34,7 +37,8 @@ export default function RootLayout() {
           <View
             className={cn(
               'min-w-0 flex-1 overflow-hidden',
-              isDesktop && 'my-2 mr-2 rounded-2xl'
+              isDesktop &&
+                'my-2 mr-2 rounded-2xl border border-ink-100 dark:border-white/10'
             )}>
             <Stack
               screenOptions={{

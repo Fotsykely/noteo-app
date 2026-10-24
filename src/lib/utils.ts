@@ -9,6 +9,12 @@ export const noWebOutline = (Platform.OS === 'web'
   ? { outlineStyle: 'none' }
   : {}) as TextStyle;
 
+/**
+ * Barres de défilement : masquées au doigt (mobile), visibles au pointeur (web), où elles
+ * indiquent la position et permettent de faire glisser la page.
+ */
+export const showScrollbar = Platform.OS === 'web';
+
 /** Concatène des classes conditionnelles sans dépendance externe. */
 export function cn(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(' ');

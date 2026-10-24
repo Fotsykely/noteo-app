@@ -15,8 +15,9 @@ import { useColors } from '@/hooks/use-theme';
 import { ON_SITE_RADIUS_M, REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
 import { useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
-import { noWebOutline } from '@/lib/utils';
+import { noWebOutline, showScrollbar } from '@/lib/utils';
 import type { Json } from '@/types/database';
+import { goBack } from '@/lib/navigation';
 
 const RATING_LABELS = ['', 'Très mauvais', 'Mauvais', 'Correct', 'Bien', 'Excellent'];
 
@@ -70,7 +71,7 @@ export default function NewReviewScreen() {
           icon="alert-circle-outline"
           title="Lieu introuvable"
           actionLabel="Fermer"
-          onAction={() => router.back()}
+          onAction={() => goBack()}
         />
       </View>
     );
@@ -141,7 +142,7 @@ export default function NewReviewScreen() {
           title={result.wasUpdate ? 'Avis mis à jour' : 'Merci pour votre avis'}
           description={message}
           actionLabel="Terminer"
-          onAction={() => router.back()}
+          onAction={() => goBack()}
         />
       </View>
     );
@@ -152,7 +153,7 @@ export default function NewReviewScreen() {
       className="flex-1 bg-surface dark:bg-surface-dark"
       behavior={Platform.select({ ios: 'padding', default: undefined })}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={showScrollbar}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           padding: 20,
@@ -212,7 +213,7 @@ export default function NewReviewScreen() {
           className="mt-3 min-h-32 rounded-card border border-ink-100 focus:border-brand-500 p-4 text-base leading-5 text-ink dark:border-white/10 dark:text-white"
         style={noWebOutline}
         />
-        <Text className="mt-1.5 text-right text-xs text-ink-300 dark:text-ink-500">
+        <Text className="mt-1.5 text-right text-xs text-ink-500 dark:text-ink-300">
           {comment.length}/800
         </Text>
 

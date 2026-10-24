@@ -18,11 +18,13 @@ type ButtonProps = {
   className?: string;
 };
 
+// `hover:` n'agit qu'au pointeur ; `active:` couvre l'appui sur mobile.
 const CONTAINER: Record<Variant, string> = {
-  primary: 'bg-brand-500 active:bg-brand-600',
-  secondary: 'bg-ink dark:bg-white active:opacity-80',
-  outline: 'border border-ink-200 dark:border-white/20 active:bg-ink-50 dark:active:bg-white/10',
-  ghost: 'active:bg-ink-50 dark:active:bg-white/10',
+  primary: 'bg-brand-600 hover:bg-brand-700 active:bg-brand-800',
+  secondary: 'bg-ink dark:bg-white hover:opacity-90 active:opacity-80',
+  outline:
+    'border border-ink-200 dark:border-white/20 hover:bg-ink-50 dark:hover:bg-white/10 active:bg-ink-100 dark:active:bg-white/15',
+  ghost: 'hover:bg-ink-50 dark:hover:bg-white/10 active:bg-ink-100 dark:active:bg-white/15',
 };
 
 const LABEL: Record<Variant, string> = {
@@ -64,7 +66,7 @@ export function Button({
       accessibilityLabel={label}
       accessibilityState={{ disabled: inactive, busy: loading }}
       className={cn(
-        'h-14 flex-row items-center justify-center rounded-pill px-6',
+        'h-14 flex-row items-center justify-center rounded-pill px-6 web:transition-colors web:duration-150',
         CONTAINER[variant],
         fullWidth && 'w-full',
         inactive && 'opacity-50',

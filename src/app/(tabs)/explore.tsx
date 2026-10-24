@@ -6,7 +6,7 @@ import { DistrictPicker } from '@/components/district-picker';
 import { Chip } from '@/components/ui/category-chip';
 import { Container } from '@/components/ui/container';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PlaceRow } from '@/components/ui/place-card';
+import { PlaceRow, PlaceRowSkeleton } from '@/components/ui/place-card';
 import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { Screen } from '@/components/ui/screen';
 import { CATEGORIES } from '@/constants/categories';
@@ -15,6 +15,7 @@ import { useLocation } from '@/hooks/use-location';
 import { useCategoryCounts, useDistricts, useRankedPlaces } from '@/hooks/use-places';
 import type { SortMode } from '@/lib/places';
 import type { CategorySlug } from '@/types';
+import { showScrollbar } from '@/lib/utils';
 
 export default function ExploreScreen() {
   const params = useLocalSearchParams<{ category?: string }>();
@@ -69,55 +70,145 @@ export default function ExploreScreen() {
     <DistrictPicker value={district} onChange={setDistrict} category={category} allowAll />
   );
 
+  const sortChips = (
+    <>
+      <Chip
+        label="Mieux notés"
+        icon="trophy-outline"
+        selected={sort === 'rating'}
+        onPress={() => setSort('rating')}
+      />
+      {canSortByDistance && (
+        <Chip
+          label="Plus proches"
+          icon="navigate-outline"
+          selected={sort === 'distance'}
+          onPress={() => setSort('distance')}
+        />
+      )}
+    </>
+  );
+
+  const title = (
+    <>
+      <Text className="text-[28px] font-bold text-ink dark:text-white lg:text-[36px]">
+        Classements
+      </Text>
+      <Text className="mt-1 text-sm text-ink-500 dark:text-ink-300">
+        {total !== undefined ? `${total} lieux` : 'Lieux'} à {district ?? 'Antananarivo'}
+      </Text>
+    </>
+  );
+
+  const emptyState = (
+    <EmptyState
+      icon="funnel-outline"
+      title="Aucun lieu avec ces filtres"
+      description="Essayez une autre catégorie ou un autre quartier."
+      actionLabel="Réinitialiser"
+      onAction={() => {
+        setCategory(null);
+        setDistrict(null);
+      }}
+    />
+  );
+
+  const footer = ranking.isFetchingNextPage ? (
+    <LoadingState className="py-6" />
+  ) : results.length > 0 && sort === 'rating' ? (
+    <Text className="px-5 pt-4 text-center text-xs leading-4 text-ink-500 dark:text-ink-300">
+      Le classement tient compte du nombre d&apos;avis : un lieu noté 5 par une seule personne ne
+      devance pas un lieu noté 4,7 par deux cents.
+    </Text>
+  ) : null;
+
+  const fetchMore = () => {
+    if (ranking.hasNextPage && !ranking.isFetchingNextPage) ranking.fetchNextPage();
+  };
+
+  // ---------- Grand écran : tout défile ensemble, filtres sur une seule ligne ----------
+  if (isDesktop) {
+    return (
+      <Screen>
+        <FlatList
+          // Changer le nombre de colonnes exige de remonter la liste.
+          key="grille"
+          data={results}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={{ gap: 16 }}
+          contentContainerStyle={{
+            paddingBottom: 32,
+            width: '100%',
+            maxWidth: 1280,
+            alignSelf: 'center',
+            // 16 + les 16 px de `PlaceRow` = la gouttière de 32 px des autres écrans.
+            paddingHorizontal: 16,
+          }}
+          showsVerticalScrollIndicator={showScrollbar}
+          onEndReached={fetchMore}
+          onEndReachedThreshold={0.5}
+          ListHeaderComponent={
+            <View className="px-4 pb-3 pt-8">
+              {title}
+              <View className="mt-5 flex-row flex-wrap items-center gap-x-2 gap-y-3">
+                {categoryChips}
+                <View className="mx-1 h-6 w-px bg-ink-200 dark:bg-white/20" />
+                {districtPicker}
+                <View className="mx-1 h-6 w-px bg-ink-200 dark:bg-white/20" />
+                {sortChips}
+              </View>
+            </View>
+          }
+          renderItem={({ item, index }) => (
+            <View className="flex-1">
+              <PlaceRow
+                place={item}
+                distanceMeters={item.distance}
+                rank={sort === 'rating' ? index + 1 : undefined}
+              />
+            </View>
+          )}
+          ListEmptyComponent={
+            ranking.isPending ? (
+              <View className="flex-row flex-wrap">
+                {Array.from({ length: 8 }, (_, index) => (
+                  <View key={index} className="w-1/2">
+                    <PlaceRowSkeleton />
+                  </View>
+                ))}
+              </View>
+            ) : ranking.isError ? (
+              <ErrorState onRetry={() => ranking.refetch()} />
+            ) : (
+              emptyState
+            )
+          }
+          ListFooterComponent={footer}
+        />
+      </Screen>
+    );
+  }
+
+  // ---------- Mobile ----------
   return (
     <Screen>
-      <Container className="pb-1 pt-2 lg:pt-8">
-        <Text className="text-[28px] font-bold text-ink dark:text-white lg:text-[36px]">
-          Classements
-        </Text>
-        <Text className="mt-1 text-sm text-ink-500 dark:text-ink-300">
-          {total !== undefined ? `${total} lieux` : 'Lieux'} à {district ?? 'Antananarivo'}
-        </Text>
-      </Container>
+      <Container className="pb-1 pt-2">{title}</Container>
 
-      {/* Filtres : défilement horizontal au doigt, retour à la ligne au pointeur. */}
-      {isDesktop ? (
-        <Container className="pt-5">
-          <View className="flex-row flex-wrap gap-x-2 gap-y-3">{categoryChips}</View>
-          <View className="mt-3 flex-row">{districtPicker}</View>
-        </Container>
-      ) : (
-        <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0, flexShrink: 0 }}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingVertical: 12 }}>
-            {categoryChips}
-          </ScrollView>
-          <View className="flex-row px-5">{districtPicker}</View>
-        </>
-      )}
+      {/* Filtres : défilement horizontal au doigt. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0, flexShrink: 0 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingVertical: 12 }}>
+        {categoryChips}
+      </ScrollView>
+      <View className="flex-row px-5">{districtPicker}</View>
 
       {/* Tri */}
       <View className="mt-3 border-t border-ink-100 dark:border-white/10">
         <Container className="py-3">
-          <View className="flex-row gap-2">
-            <Chip
-              label="Mieux notés"
-              icon="trophy-outline"
-              selected={sort === 'rating'}
-              onPress={() => setSort('rating')}
-            />
-            {canSortByDistance && (
-              <Chip
-                label="Plus proches"
-                icon="navigate-outline"
-                selected={sort === 'distance'}
-                onPress={() => setSort('distance')}
-              />
-            )}
-          </View>
+          <View className="flex-row gap-2">{sortChips}</View>
         </Container>
       </View>
 
@@ -127,56 +218,23 @@ export default function ExploreScreen() {
         <ErrorState onRetry={() => ranking.refetch()} />
       ) : (
         <FlatList
-          // Changer le nombre de colonnes exige de remonter la liste.
-          key={isDesktop ? 'grille' : 'liste'}
+          key="liste"
           data={results}
           keyExtractor={(item) => item.id}
-          numColumns={isDesktop ? 2 : 1}
-          columnWrapperStyle={isDesktop ? { gap: 16 } : undefined}
-          contentContainerStyle={{
-            paddingBottom: 32,
-            width: '100%',
-            maxWidth: 1280,
-            alignSelf: 'center',
-            paddingHorizontal: isDesktop ? 20 : 0,
-          }}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 32 }}
+          showsVerticalScrollIndicator={showScrollbar}
           // Page suivante un demi-écran avant la fin de la liste.
-          onEndReached={() => {
-            if (ranking.hasNextPage && !ranking.isFetchingNextPage) ranking.fetchNextPage();
-          }}
+          onEndReached={fetchMore}
           onEndReachedThreshold={0.5}
           renderItem={({ item, index }) => (
-            <View className={isDesktop ? 'flex-1' : undefined}>
-              <PlaceRow
-                place={item}
-                distanceMeters={item.distance}
-                rank={sort === 'rating' ? index + 1 : undefined}
-              />
-            </View>
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              icon="funnel-outline"
-              title="Aucun lieu avec ces filtres"
-              description="Essayez une autre catégorie ou un autre quartier."
-              actionLabel="Réinitialiser"
-              onAction={() => {
-                setCategory(null);
-                setDistrict(null);
-              }}
+            <PlaceRow
+              place={item}
+              distanceMeters={item.distance}
+              rank={sort === 'rating' ? index + 1 : undefined}
             />
-          }
-          ListFooterComponent={
-            ranking.isFetchingNextPage ? (
-              <LoadingState className="py-6" />
-            ) : results.length > 0 && sort === 'rating' ? (
-              <Text className="px-5 pt-4 text-center text-xs leading-4 text-ink-500 dark:text-ink-300">
-                Le classement tient compte du nombre d&apos;avis : un lieu noté 5 par une seule
-                personne ne devance pas un lieu noté 4,7 par deux cents.
-              </Text>
-            ) : null
-          }
+          )}
+          ListEmptyComponent={emptyState}
+          ListFooterComponent={footer}
         />
       )}
     </Screen>

@@ -48,7 +48,11 @@ export function SearchBar({
         className="flex-1 text-base text-ink dark:text-white"
       />
       {!!value && onChangeText && (
-        <Pressable onPress={() => onChangeText('')} hitSlop={8} accessibilityLabel="Effacer">
+        <Pressable
+          onPress={() => onChangeText('')}
+          accessibilityRole="button"
+          accessibilityLabel="Effacer"
+          className="-mr-2 h-8 w-8 items-center justify-center rounded-full hover:bg-ink-100 active:opacity-60 dark:hover:bg-white/10">
           <Ionicons name="close-circle" size={18} color={colors.textFaint} />
         </Pressable>
       )}

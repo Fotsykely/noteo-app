@@ -11,6 +11,7 @@ import { useIsModerator } from '@/hooks/use-role';
 import { useColors } from '@/hooks/use-theme';
 import { signOut, useSession } from '@/lib/session';
 import type { IoniconName } from '@/types';
+import { showScrollbar } from '@/lib/utils';
 
 function Row({
   icon,
@@ -23,11 +24,24 @@ function Row({
 }) {
   const colors = useColors();
 
+  // Pas d'action branchée : on le dit, au lieu d'un clic qui ne fait rien.
+  if (!onPress) {
+    return (
+      <View className="flex-row items-center gap-3 px-5 py-4">
+        <Ionicons name={icon} size={20} color={colors.textFaint} />
+        <Text className="flex-1 text-base text-ink-500 dark:text-ink-300">{label}</Text>
+        <View className="rounded-pill bg-ink-100 px-2.5 py-1 dark:bg-white/10">
+          <Text className="text-[11px] font-semibold text-ink-700 dark:text-ink-300">Bientôt</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      className="flex-row items-center gap-3 rounded-xl px-5 py-4 active:bg-ink-50 hover:bg-ink-50 dark:active:bg-white/5 dark:hover:bg-white/5">
+      className="flex-row items-center gap-3 rounded-xl px-5 py-4 hover:bg-ink-50 active:bg-ink-100 dark:hover:bg-white/5 dark:active:bg-white/10 web:transition-colors web:duration-150">
       <Ionicons name={icon} size={20} color={colors.textMuted} />
       <Text className="flex-1 text-base text-ink dark:text-white">{label}</Text>
       <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
@@ -44,7 +58,7 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={showScrollbar}>
         <Container className="pb-4 pt-2 lg:pt-8">
           <Text className="text-[28px] font-bold text-ink dark:text-white lg:text-[36px]">
             Profil
@@ -117,7 +131,7 @@ export default function ProfileScreen() {
         ) : null}
 
         {/* Attribution exigée par la licence ODbL : le catalogue vient d'OpenStreetMap. */}
-        <Text className="px-5 py-8 text-center text-xs leading-5 text-ink-300 dark:text-ink-500">
+        <Text className="px-5 py-8 text-center text-xs leading-5 text-ink-500 dark:text-ink-300">
           Noteo — version 1.0.0{'\n'}Données des lieux © les contributeurs d&apos;OpenStreetMap
         </Text>
       </ScrollView>

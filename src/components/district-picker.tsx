@@ -70,7 +70,7 @@ export function DistrictPicker({
       <Text
         className={cn(
           'flex-1 text-base text-ink dark:text-white',
-          selected && 'font-semibold text-brand-600 dark:text-brand-500'
+          selected && 'font-semibold text-brand-700 dark:text-brand-400'
         )}>
         {label}
       </Text>
@@ -114,7 +114,12 @@ export function DistrictPicker({
             </View>
 
             <View className="px-5 pb-3">
-              <SearchBar value={search} onChangeText={setSearch} placeholder="Rechercher un quartier" />
+              <SearchBar
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Rechercher un quartier"
+                autoFocus={isDesktop}
+              />
             </View>
 
             {districts.isPending ? (

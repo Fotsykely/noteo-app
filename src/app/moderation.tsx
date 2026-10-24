@@ -14,11 +14,13 @@ import {
   useModerateReview,
   useModerationQueue,
 } from '@/hooks/use-moderation';
+import { useIsDesktop } from '@/hooks/use-breakpoint';
 import { useIsModerator } from '@/hooks/use-role';
 import { summarizeReasons } from '@/lib/reports';
 import { useSession } from '@/lib/session';
-import { cn } from '@/lib/utils';
+import { cn, showScrollbar } from '@/lib/utils';
 import type { CategorySlug } from '@/types';
+import { goBack } from '@/lib/navigation';
 
 type Tone = 'neutral' | 'danger';
 
@@ -64,12 +66,12 @@ function ActionButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       className={cn(
-        'h-10 items-center justify-center rounded-pill border px-4',
+        'h-10 items-center justify-center rounded-pill border px-4 web:transition-colors web:duration-150',
         armed
           ? 'border-red-600 bg-red-600'
           : tone === 'danger'
-            ? 'border-red-300 active:bg-red-50 dark:border-red-500/50 dark:active:bg-red-500/10'
-            : 'border-ink-200 active:bg-ink-50 dark:border-white/20 dark:active:bg-white/10',
+            ? 'border-red-300 hover:bg-red-50 active:bg-red-100 dark:border-red-500/50 dark:hover:bg-red-500/10 dark:active:bg-red-500/20'
+            : 'border-ink-200 hover:bg-ink-50 active:bg-ink-100 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15',
         disabled && 'opacity-50'
       )}>
       <Text
@@ -232,6 +234,7 @@ export default function ModerationScreen() {
   const router = useRouter();
   const user = useSession();
   const isModerator = useIsModerator();
+  const isDesktop = useIsDesktop();
   const queue = useModerationQueue();
   const [error, setError] = useState<string | null>(null);
 
@@ -257,7 +260,7 @@ export default function ModerationScreen() {
           title="Réservé aux modérateurs"
           description="Seuls les administrateurs et les modérateurs voient cet écran."
           actionLabel="Retour"
-          onAction={() => router.back()}
+          onAction={() => goBack()}
         />
       </View>
     );
@@ -271,13 +274,23 @@ export default function ModerationScreen() {
         <ErrorState onRetry={() => queue.refetch()} />
       ) : (
         <FlatList
+          // Changer le nombre de colonnes exige de remonter la liste.
+          key={isDesktop ? 'grille' : 'liste'}
           data={queue.data}
           keyExtractor={(item) => item.key}
+          numColumns={isDesktop ? 2 : 1}
+          columnWrapperStyle={isDesktop ? { gap: 16, paddingHorizontal: 32 } : undefined}
           refreshing={queue.isRefetching}
           onRefresh={() => queue.refetch()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40, paddingTop: 8 }}
-          ItemSeparatorComponent={() => <View className="h-3" />}
+          showsVerticalScrollIndicator={showScrollbar}
+          contentContainerStyle={{
+            paddingBottom: 40,
+            paddingTop: 8,
+            width: '100%',
+            maxWidth: 1280,
+            alignSelf: 'center',
+          }}
+          ItemSeparatorComponent={() => <View className="h-4" />}
           ListHeaderComponent={
             <Container className="pb-3">
               {queue.data.length > 0 && (
@@ -291,13 +304,17 @@ export default function ModerationScreen() {
               )}
             </Container>
           }
-          renderItem={({ item }) => (
-            <Container>
-              <View className="w-full max-w-2xl">
+          renderItem={({ item }) =>
+            isDesktop ? (
+              <View className="min-w-0 flex-1">
                 <QueueCard item={item} busy={queue.isRefetching} onError={setError} />
               </View>
-            </Container>
-          )}
+            ) : (
+              <Container>
+                <QueueCard item={item} busy={queue.isRefetching} onError={setError} />
+              </Container>
+            )
+          }
           ListEmptyComponent={
             <EmptyState
               icon="checkmark-circle-outline"

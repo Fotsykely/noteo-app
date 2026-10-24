@@ -18,8 +18,9 @@ import { useColors } from '@/hooks/use-theme';
 import { REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
 import { useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
-import { cn, noWebOutline } from '@/lib/utils';
+import { cn, noWebOutline, showScrollbar } from '@/lib/utils';
 import type { CategorySlug, Coordinates } from '@/types';
+import { goBack } from '@/lib/navigation';
 
 /**
  * La position est obligatoire : celle du téléphone (`device`) ou un repère placé sur la
@@ -172,7 +173,7 @@ export default function NewPlaceScreen() {
         queryClient.invalidateQueries({ queryKey: ['districts'] }),
         queryClient.invalidateQueries({ queryKey: ['moderation'] }),
       ]);
-      router.back();
+      goBack();
       return;
     }
 
@@ -211,7 +212,7 @@ export default function NewPlaceScreen() {
           title="Réservé aux modérateurs"
           description="Pour signaler une erreur sur ce lieu, utilisez « Signaler un problème » sur sa fiche."
           actionLabel="Retour"
-          onAction={() => router.back()}
+          onAction={() => goBack()}
         />
       </View>
     );
@@ -245,7 +246,7 @@ export default function NewPlaceScreen() {
       behavior={Platform.select({ ios: 'padding', default: undefined })}>
       <Stack.Screen options={{ title: editing ? 'Corriger la fiche' : 'Ajouter un lieu' }} />
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={showScrollbar}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           padding: 20,
@@ -300,7 +301,7 @@ export default function NewPlaceScreen() {
                 accessibilityRole="button"
                 hitSlop={8}
                 className="active:opacity-60">
-                <Text className="text-sm font-semibold text-brand-500">
+                <Text className="text-sm font-semibold text-brand-700 dark:text-brand-400">
                   {position.status === 'found' ? 'Modifier sur la carte' : 'Choisir sur la carte'}
                 </Text>
               </Pressable>
@@ -309,7 +310,7 @@ export default function NewPlaceScreen() {
                 accessibilityRole="button"
                 hitSlop={8}
                 className="active:opacity-60">
-                <Text className="text-sm font-semibold text-brand-500">Ma position</Text>
+                <Text className="text-sm font-semibold text-brand-700 dark:text-brand-400">Ma position</Text>
               </Pressable>
             </View>
           )}

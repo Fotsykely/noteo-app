@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +24,8 @@ import { useIsModerator } from '@/hooks/use-role';
 import { useColors } from '@/hooks/use-theme';
 import { REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
 import { useSession } from '@/lib/session';
-import { distanceMeters, formatDistance, formatRating, timeAgo } from '@/lib/utils';
+import { distanceMeters, formatDistance, formatRating, showScrollbar, timeAgo } from '@/lib/utils';
+import { goBack } from '@/lib/navigation';
 
 export default function PlaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,7 +77,7 @@ export default function PlaceScreen() {
           title="Lieu introuvable"
           description="Cette fiche n'existe plus ou a été retirée."
           actionLabel="Revenir en arrière"
-          onAction={() => router.back()}
+          onAction={() => goBack()}
         />
       </View>
     );
@@ -177,16 +178,16 @@ export default function PlaceScreen() {
         <Pressable
           onPress={() => Linking.openURL(`tel:${place.phone?.replace(/\s/g, '')}`)}
           accessibilityRole="button"
-          className="flex-row items-center gap-3 active:opacity-60">
+          className="flex-row items-center gap-3 py-1 hover:underline active:opacity-60">
           <Ionicons name="call-outline" size={18} color={colors.brand} />
-          <Text className="flex-1 text-sm font-medium text-brand-500">{place.phone}</Text>
+          <Text className="flex-1 text-sm font-medium text-brand-700 dark:text-brand-400">{place.phone}</Text>
         </Pressable>
       )}
       <View className="flex-row flex-wrap gap-x-5 gap-y-2 pt-1">
         <Pressable
           onPress={() => openReport({ kind: 'place', placeId: place.id })}
           accessibilityRole="button"
-          className="flex-row items-center gap-1.5 active:opacity-60">
+          className="flex-row items-center gap-1.5 py-1.5 hover:underline active:opacity-60">
           <Ionicons name="flag-outline" size={15} color={colors.textMuted} />
           <Text className="text-xs font-medium text-ink-500 dark:text-ink-300">
             Signaler un problème
@@ -196,9 +197,9 @@ export default function PlaceScreen() {
           <Pressable
             onPress={() => router.push(`/place/new?id=${place.id}`)}
             accessibilityRole="button"
-            className="flex-row items-center gap-1.5 active:opacity-60">
+            className="flex-row items-center gap-1.5 py-1.5 hover:underline active:opacity-60">
             <Ionicons name="create-outline" size={15} color={colors.brand} />
-            <Text className="text-xs font-semibold text-brand-500">Corriger la fiche</Text>
+            <Text className="text-xs font-semibold text-brand-700 dark:text-brand-400">Corriger la fiche</Text>
           </Pressable>
         )}
       </View>
@@ -241,16 +242,15 @@ export default function PlaceScreen() {
               {review.authorId !== user?.id && (
                 <Pressable
                   onPress={() => openReport({ kind: 'review', placeId: place.id, reviewId: review.id })}
-                  hitSlop={10}
                   accessibilityRole="button"
                   accessibilityLabel="Signaler cet avis"
-                  className="active:opacity-60">
+                  className="-mr-2 h-8 w-8 items-center justify-center rounded-full hover:bg-ink-50 active:opacity-60 dark:hover:bg-white/10">
                   <Ionicons name="flag-outline" size={16} color={colors.textFaint} />
                 </Pressable>
               )}
             </View>
             {review.comment && (
-              <Text className="mt-3 text-sm leading-5 text-ink-700 dark:text-ink-200">
+              <Text className="mt-3 text-sm leading-5 text-ink-700 dark:text-ink-200 lg:text-[15px] lg:leading-6">
                 {review.comment}
               </Text>
             )}
@@ -276,10 +276,11 @@ export default function PlaceScreen() {
   if (isDesktop) {
     return (
       <View className="flex-1 bg-surface dark:bg-surface-dark">
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 48 }}>
+        <Stack.Screen options={{ title: place.name }} />
+        <ScrollView showsVerticalScrollIndicator={showScrollbar} contentContainerStyle={{ paddingBottom: 48 }}>
           <Container className="pt-6">
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => goBack()}
               accessibilityRole="button"
               accessibilityLabel="Retour"
               className="h-10 w-10 items-center justify-center rounded-full active:opacity-70 hover:bg-ink-50 dark:hover:bg-white/10">
@@ -313,19 +314,21 @@ export default function PlaceScreen() {
 
             {pendingNotice && <View className="mt-8 max-w-2xl">{pendingNotice}</View>}
 
-            {/* Notes et coordonnées côte à côte */}
-            <View className="mt-10 flex-row gap-6">
-              <View className="flex-1 gap-6">
+            {/* Colonne principale (critères, avis) + colonne latérale (note, coordonnées).
+                Sans avis, il n'y a pas de colonne vide : le texte garde sa largeur de lecture. */}
+            <View className="mt-10 flex-row items-start gap-10">
+              <View className="min-w-0 flex-1">
+                {criteriaBlock && <View className="mb-10">{criteriaBlock}</View>}
+                <Text className="text-lg font-bold text-ink dark:text-white">
+                  Avis ({place.ratingCount})
+                </Text>
+                {reviewList}
+              </View>
+              <View className="w-[360px] shrink-0 gap-6">
                 {ratingBlock}
                 {contactBlock}
               </View>
-              <View className="flex-1">{criteriaBlock}</View>
             </View>
-
-            <Text className="mt-10 text-lg font-bold text-ink dark:text-white">
-              Avis ({place.ratingCount})
-            </Text>
-            {reviewList}
           </Container>
         </ScrollView>
         <ReportSheet target={reportTarget} onClose={() => setReportTarget(null)} />
@@ -336,11 +339,12 @@ export default function PlaceScreen() {
   // ---------- Mobile ----------
   return (
     <View className="flex-1 bg-surface dark:bg-surface-dark">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <Stack.Screen options={{ title: place.name }} />
+      <ScrollView showsVerticalScrollIndicator={showScrollbar} contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="h-64 w-full bg-ink-100 dark:bg-white/10">{cover}</View>
 
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack()}
           accessibilityRole="button"
           accessibilityLabel="Retour"
           hitSlop={8}

@@ -59,12 +59,12 @@ export function PlaceCard({ place, distanceMeters, width = 'fixed' }: PlaceCardP
   return (
     <Link href={`/place/${place.id}`} asChild>
       <Pressable
-        accessibilityRole="button"
+        accessibilityRole="link"
         accessibilityLabel={place.name}
         className={cn(
           'overflow-hidden rounded-card border border-ink-100 bg-surface active:opacity-80 dark:border-white/10 dark:bg-surface-darkMuted',
           // Le survol n'existe qu'au pointeur : invisible sur mobile.
-          'hover:border-ink-200 dark:hover:bg-white/10',
+          'hover:border-brand-500/50 dark:hover:bg-white/10 web:transition-colors web:duration-150',
           width === 'fill' ? 'w-full' : 'w-60'
         )}>
         <PlaceCover place={place} className="h-32 w-full bg-ink-100 dark:bg-white/10" />
@@ -107,11 +107,11 @@ export function PlaceRow({ place, distanceMeters, rank }: PlaceRowProps) {
   return (
     <Link href={`/place/${place.id}`} asChild>
       <Pressable
-        accessibilityRole="button"
+        accessibilityRole="link"
         accessibilityLabel={place.name}
-        className="flex-row items-center gap-3 rounded-card px-4 py-3 active:bg-ink-50 hover:bg-ink-50 dark:hover:bg-white/5 dark:active:bg-white/5">
+        className="flex-row items-center gap-3 rounded-card px-4 py-3 hover:bg-ink-50 active:bg-ink-100 dark:hover:bg-white/5 dark:active:bg-white/10 web:transition-colors web:duration-150">
         {rank !== undefined && (
-          <Text className="w-6 text-base font-bold text-ink-300 dark:text-ink-500">{rank}</Text>
+          <Text className="min-w-6 text-base font-bold text-ink-500 dark:text-ink-300">{rank}</Text>
         )}
         <PlaceCover place={place} className="h-[68px] w-[68px] overflow-hidden rounded-2xl bg-ink-100 dark:bg-white/10" />
         <View className="flex-1">
@@ -138,5 +138,37 @@ export function PlaceRow({ place, distanceMeters, rank }: PlaceRowProps) {
         <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
       </Pressable>
     </Link>
+  );
+}
+
+/** Emplacement statique d'une carte pendant le chargement : la mise en page ne saute pas. */
+export function PlaceCardSkeleton({ width = 'fixed' }: { width?: 'fixed' | 'fill' }) {
+  return (
+    <View
+      className={cn(
+        'overflow-hidden rounded-card border border-ink-100 bg-surface dark:border-white/10 dark:bg-surface-darkMuted',
+        width === 'fill' ? 'w-full' : 'w-60'
+      )}>
+      <View className="h-32 w-full bg-ink-100 dark:bg-white/10" />
+      <View className="gap-2 p-3">
+        <View className="h-4 w-3/4 rounded bg-ink-100 dark:bg-white/10" />
+        <View className="h-3 w-1/2 rounded bg-ink-100 dark:bg-white/10" />
+        <View className="mt-1 h-5 w-16 rounded-lg bg-ink-100 dark:bg-white/10" />
+      </View>
+    </View>
+  );
+}
+
+/** Emplacement statique d'une ligne de liste pendant le chargement. */
+export function PlaceRowSkeleton() {
+  return (
+    <View className="flex-row items-center gap-3 px-4 py-3">
+      <View className="h-[68px] w-[68px] rounded-2xl bg-ink-100 dark:bg-white/10" />
+      <View className="flex-1 gap-2">
+        <View className="h-4 w-2/3 rounded bg-ink-100 dark:bg-white/10" />
+        <View className="h-3 w-1/2 rounded bg-ink-100 dark:bg-white/10" />
+        <View className="h-3 w-1/3 rounded bg-ink-100 dark:bg-white/10" />
+      </View>
+    </View>
   );
 }

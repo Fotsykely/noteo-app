@@ -9,13 +9,16 @@ import { PlaceRow } from '@/components/ui/place-card';
 import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
+import { useIsDesktop } from '@/hooks/use-breakpoint';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useNearbyPlaces } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
+import { showScrollbar } from '@/lib/utils';
 
 export default function AddScreen() {
   const router = useRouter();
   const colors = useColors();
+  const isDesktop = useIsDesktop();
   const [search, setSearch] = useState('');
 
   const debouncedSearch = useDebouncedValue(search.trim());
@@ -55,16 +58,27 @@ export default function AddScreen() {
           <ErrorState onRetry={() => results.refetch()} />
         ) : (
           <FlatList
+            // Changer le nombre de colonnes exige de remonter la liste.
+            key={isDesktop ? 'grille' : 'liste'}
             data={results.data}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="handled"
+            numColumns={isDesktop ? 2 : 1}
+            columnWrapperStyle={isDesktop ? { gap: 16 } : undefined}
+            showsVerticalScrollIndicator={showScrollbar}
             contentContainerStyle={{
               paddingBottom: 24,
               width: '100%',
               maxWidth: 1280,
               alignSelf: 'center',
+              // 16 + les 16 px de `PlaceRow` = la gouttière de 32 px du reste de l'écran.
+              paddingHorizontal: isDesktop ? 16 : 0,
             }}
-            renderItem={({ item }) => <PlaceRow place={item} distanceMeters={item.distance} />}
+            renderItem={({ item }) => (
+              <View className={isDesktop ? 'flex-1' : undefined}>
+                <PlaceRow place={item} distanceMeters={item.distance} />
+              </View>
+            )}
             ListEmptyComponent={
               <EmptyState
                 icon="add-circle-outline"
@@ -82,7 +96,7 @@ export default function AddScreen() {
       <Pressable
         onPress={() => router.push('/place/new')}
         accessibilityRole="button"
-        className="w-full max-w-[1280px] flex-row items-center gap-3 self-center border-t border-ink-100 px-5 py-4 active:opacity-70 hover:bg-ink-50 dark:border-white/10 dark:hover:bg-white/5">
+        className="w-full max-w-[1280px] flex-row items-center gap-3 self-center border-t border-ink-100 px-5 py-4 hover:bg-ink-50 active:opacity-70 dark:border-white/10 dark:hover:bg-white/5 web:transition-colors web:duration-150">
         <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-500/20">
           <Ionicons name="add" size={22} color={colors.brand} />
         </View>

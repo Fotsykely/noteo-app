@@ -18,7 +18,7 @@ export function RatingBadge({ value, count, size = 'md', className }: RatingBadg
       <View
         className={cn(
           'flex-row items-center rounded-lg',
-          hasRating ? 'bg-brand-500' : 'bg-ink-200 dark:bg-white/15',
+          hasRating ? 'bg-brand-600' : 'bg-ink-200 dark:bg-white/15',
           size === 'sm' ? 'px-1.5 py-0.5' : 'px-2 py-1'
         )}>
         <Text

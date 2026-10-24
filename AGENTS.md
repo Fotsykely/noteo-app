@@ -19,6 +19,16 @@ Prochaine étape : Supabase (schéma, RLS, triggers, RPC géo) — voir « Feuil
 - **Langue de l'interface : français.** Les libellés malgaches existent déjà dans
   `src/constants/categories.ts` (`nameMg`, `labelMg`) mais ne sont pas encore affichés.
   Ils sont **à faire valider par un locuteur natif** avant toute mise en production.
+- **Design system : `design-system/noteo/MASTER.md`** (couleurs, typographie, espacements,
+  états, composants) et `design-system/noteo/pages/desktop.md` (surcharges ≥ 1024 px). À lire
+  avant tout travail d'interface ; toute évolution du design commence par ces fichiers.
+- **Contraste :** jamais de texte ni de fond blanc-sur-vert en `brand-500` (3,1:1). Texte de
+  marque en `brand-700` (`dark:brand-400`), fond de bouton en `brand-600`.
+- **Retour et défilement :** `goBack()` (`src/lib/navigation.ts`) à la place de `router.back()`
+  (un accès direct par URL n'a pas d'historique sur le web) ; `showScrollbar`
+  (`src/lib/utils.ts`) pour `showsVerticalScrollIndicator`.
+- **Tout élément pressable porte `hover:`, `active:` et un focus visible.** `hitSlop` n'est pas
+  appliqué sur le web : donner la taille réelle de la cible.
 - **Styles : NativeWind** (Tailwind v3). Les jetons de marque sont dans `tailwind.config.js`
   et dupliqués en JS dans `src/constants/theme.ts` pour les API qui exigent une couleur
   (icônes, navigation, barre de statut). Modifier les deux en même temps.

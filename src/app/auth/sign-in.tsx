@@ -1,5 +1,4 @@
 import type { AuthError } from '@supabase/supabase-js';
-import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -7,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useColors } from '@/hooks/use-theme';
 import { refreshSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
-import { cn, noWebOutline } from '@/lib/utils';
+import { cn, noWebOutline, showScrollbar } from '@/lib/utils';
+import { goBack } from '@/lib/navigation';
 
 type Step = 'email' | 'code' | 'name';
 
@@ -32,7 +32,6 @@ function errorMessage(error: AuthError): string {
 }
 
 export default function SignInScreen() {
-  const router = useRouter();
   const colors = useColors();
 
   const [step, setStep] = useState<Step>('email');
@@ -94,12 +93,12 @@ export default function SignInScreen() {
       setStep('name');
       return;
     }
-    router.back();
+    goBack();
   }
 
   async function saveName() {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) return router.back();
+    if (!data.user) return goBack();
 
     setBusy(true);
     setError(null);
@@ -110,7 +109,7 @@ export default function SignInScreen() {
     setBusy(false);
     if (error) return setError("Ce nom n'a pas pu être enregistré. Réessayez.");
     await refreshSession();
-    router.back();
+    goBack();
   }
 
   return (
@@ -119,7 +118,7 @@ export default function SignInScreen() {
       behavior={Platform.select({ ios: 'padding', default: undefined })}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={showScrollbar}
         contentContainerStyle={{
           padding: 20,
           paddingBottom: 40,
@@ -182,6 +181,8 @@ export default function SignInScreen() {
               textContentType="oneTimeCode"
               maxLength={8}
               autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => code.length >= 6 && !busy && verifyCode()}
               className={cn('mt-7 text-center tracking-[6px]', INPUT)}
               style={noWebOutline}
             />
@@ -198,18 +199,18 @@ export default function SignInScreen() {
               <Pressable
                 onPress={() => setStep('email')}
                 accessibilityRole="button"
-                className="active:opacity-60">
+                className="px-1 py-2 hover:underline active:opacity-60">
                 <Text className="text-sm text-ink-500 dark:text-ink-300">Changer d&apos;adresse</Text>
               </Pressable>
               <Pressable
                 onPress={sendCode}
                 disabled={cooldown > 0 || busy}
                 accessibilityRole="button"
-                className="active:opacity-60">
+                className="px-1 py-2 hover:underline active:opacity-60">
                 <Text
                   className={cn(
                     'text-sm font-semibold',
-                    cooldown > 0 ? 'text-ink-300 dark:text-ink-500' : 'text-brand-500'
+                    cooldown > 0 ? 'text-ink-500 dark:text-ink-300' : 'text-brand-700 dark:text-brand-400'
                   )}>
                   {cooldown > 0 ? `Renvoyer (${cooldown} s)` : 'Renvoyer le code'}
                 </Text>
@@ -237,6 +238,8 @@ export default function SignInScreen() {
               autoComplete="name"
               maxLength={60}
               autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => name.trim().length >= 2 && !busy && saveName()}
               className={cn('mt-7', INPUT)}
               style={noWebOutline}
             />

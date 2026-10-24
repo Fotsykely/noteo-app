@@ -4,25 +4,27 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { CategoryTile } from '@/components/ui/category-chip';
 import { Container } from '@/components/ui/container';
-import { PlaceCard, PlaceRow } from '@/components/ui/place-card';
+import { PlaceCard, PlaceCardSkeleton, PlaceRow } from '@/components/ui/place-card';
 import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SectionHeader } from '@/components/ui/section-header';
 import { CATEGORIES } from '@/constants/categories';
-import { useIsDesktop } from '@/hooks/use-breakpoint';
+import { useGridColumns, useIsDesktop } from '@/hooks/use-breakpoint';
 import { useEnableLocation, useLocation } from '@/hooks/use-location';
 import { useCategoryCounts, useNearbyPlaces } from '@/hooks/use-places';
 import { useColors } from '@/hooks/use-theme';
+import { showScrollbar } from '@/lib/utils';
 
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
   const isDesktop = useIsDesktop();
+  const columns = useGridColumns();
 
   const location = useLocation();
   const enableLocation = useEnableLocation();
-  const topRated = useNearbyPlaces({ sort: 'rating' }, { limit: 8 });
+  const topRated = useNearbyPlaces({ sort: 'rating' }, { limit: 10 });
   // « Près de vous » n'a de sens qu'avec la position réelle de l'appareil.
   const hasPosition = location?.source === 'device';
   const nearby = useNearbyPlaces(
@@ -34,19 +36,16 @@ export default function HomeScreen() {
   return (
     <Screen>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={showScrollbar}
         contentContainerStyle={{ paddingBottom: 40 }}>
         {/* En-tête mobile : sur desktop, la barre latérale porte déjà ville et profil. */}
         {!isDesktop && (
           <View className="flex-row items-center justify-between px-5 pt-2">
-            <Pressable
-              className="flex-row items-center gap-1.5 active:opacity-60"
-              accessibilityRole="button"
-              accessibilityLabel="Changer de ville">
+            {/* Une seule ville au MVP : simple repère, pas de sélecteur. */}
+            <View className="flex-row items-center gap-1.5">
               <Ionicons name="location" size={16} color={colors.brand} />
               <Text className="text-sm font-semibold text-ink dark:text-white">Antananarivo</Text>
-              <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
-            </Pressable>
+            </View>
             <Pressable
               onPress={() => router.push('/profile')}
               hitSlop={8}
@@ -94,15 +93,26 @@ export default function HomeScreen() {
             />
           </Container>
 
-          {topRated.isPending ? (
+          {topRated.isPending && isDesktop ? (
+            <Container className="mt-4">
+              <View className="-mx-2 flex-row flex-wrap">
+                {Array.from({ length: columns * 2 }, (_, index) => (
+                  <View key={index} style={{ width: `${100 / columns}%` }} className="p-2">
+                    <PlaceCardSkeleton width="fill" />
+                  </View>
+                ))}
+              </View>
+            </Container>
+          ) : topRated.isPending ? (
             <LoadingState className="h-56" />
           ) : topRated.isError ? (
             <ErrorState onRetry={() => topRated.refetch()} />
           ) : isDesktop ? (
+            // Un multiple du nombre de colonnes : pas de rangée orpheline.
             <Container className="mt-4">
               <View className="-mx-2 flex-row flex-wrap">
-                {topRated.data.map((place) => (
-                  <View key={place.id} className="w-1/4 p-2 xl:w-1/5">
+                {topRated.data.slice(0, columns * 2).map((place) => (
+                  <View key={place.id} style={{ width: `${100 / columns}%` }} className="p-2">
                     <PlaceCard place={place} distanceMeters={place.distance} width="fill" />
                   </View>
                 ))}
@@ -113,7 +123,7 @@ export default function HomeScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingTop: 14 }}>
-              {topRated.data.map((place) => (
+              {topRated.data.slice(0, 8).map((place) => (
                 <PlaceCard key={place.id} place={place} distanceMeters={place.distance} />
               ))}
             </ScrollView>
@@ -146,7 +156,7 @@ export default function HomeScreen() {
                       accessibilityRole="button"
                       hitSlop={8}
                       className="active:opacity-60">
-                         <Text className="text-sm font-semibold text-brand-500">Activer</Text>
+                         <Text className="text-sm font-semibold text-brand-700 dark:text-brand-400">Activer</Text>
                     </Pressable>
                   )}
                 </View>
@@ -157,10 +167,10 @@ export default function HomeScreen() {
           ) : nearby.isError ? (
             <ErrorState onRetry={() => nearby.refetch()} />
           ) : (
-            <Container padded={false} className="mt-2 px-1 lg:mt-4 lg:px-6">
+            <Container padded={false} className="mt-2 px-1 lg:mt-4 lg:px-4">
               <View className="flex-row flex-wrap">
                 {nearby.data.map((place) => (
-                  <View key={place.id} className="w-full lg:w-1/2 lg:px-2">
+                  <View key={place.id} className="w-full lg:w-1/2">
                     <PlaceRow place={place} distanceMeters={place.distance} />
                   </View>
                 ))}

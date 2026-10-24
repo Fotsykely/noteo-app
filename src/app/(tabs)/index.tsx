@@ -23,11 +23,13 @@ export default function HomeScreen() {
   const location = useLocation();
   const enableLocation = useEnableLocation();
   const topRated = useNearbyPlaces({ sort: 'rating' }, { limit: 8 });
-  const nearby = useNearbyPlaces({ sort: 'distance', includePending: true }, { limit: 6 });
+  // « Près de vous » n'a de sens qu'avec la position réelle de l'appareil.
+  const hasPosition = location?.source === 'device';
+  const nearby = useNearbyPlaces(
+    { sort: 'distance', includePending: true },
+    { limit: 6, enabled: hasPosition }
+  );
   const counts = useCategoryCounts();
-
-  const nearbySubtitle =
-    location?.source === 'device' ? 'Autour de votre position' : "Autour d'Analakely, au centre-ville";
 
   return (
     <Screen>
@@ -118,35 +120,39 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Près de vous — une colonne sur mobile, deux sur grand écran */}
+        {/* Près de vous — une colonne sur mobile, deux sur grand écran.
+            Sans position réelle, ni lieux ni distances : on invite à activer la localisation. */}
         <View className="mt-8 lg:mt-12">
           <Container>
-            <SectionHeader title="Près de vous" subtitle={nearbySubtitle} />
+            <SectionHeader
+              title="Près de vous"
+              subtitle={hasPosition ? 'Autour de votre position' : undefined}
+            />
           </Container>
 
-          {/* Sans position réelle, les distances partent d'Analakely : on le dit. */}
-          {location && location.source !== 'device' && (
-            <Container className="mt-3">
-              <View className="flex-row items-center gap-3 rounded-card bg-ink-50 p-3 dark:bg-white/5">
-                <Ionicons name="location-outline" size={18} color={colors.textMuted} />
-                <Text className="flex-1 text-xs leading-4 text-ink-700 dark:text-ink-300">
-                  {location.source === 'outside'
-                    ? "Vous semblez hors d'Antananarivo : les distances sont mesurées depuis Analakely."
-                    : 'Position non partagée : les distances sont mesurées depuis Analakely.'}
-                </Text>
-                {location.source === 'denied' && (
-                  <Pressable
-                    onPress={enableLocation}
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    className="active:opacity-60">
-                    <Text className="text-sm font-semibold text-brand-500">Activer</Text>
-                  </Pressable>
-                )}
-              </View>
-            </Container>
-          )}
-          {nearby.isPending ? (
+          {!hasPosition ? (
+            location && (
+              <Container className="mt-3">
+                <View className="flex-row items-center gap-3 rounded-card bg-ink-50 p-3 dark:bg-white/5">
+                  <Ionicons name="location-outline" size={18} color={colors.textMuted} />
+                  <Text className="flex-1 text-xs leading-4 text-ink-700 dark:text-ink-300">
+                    {location.source === 'outside'
+                      ? "Vous semblez hors d'Antananarivo : les lieux proches ne sont pas disponibles."
+                      : 'Activez la localisation pour voir les lieux près de vous.'}
+                  </Text>
+                  {location.source === 'denied' && (
+                    <Pressable
+                      onPress={enableLocation}
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      className="active:opacity-60">
+                         <Text className="text-sm font-semibold text-brand-500">Activer</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </Container>
+            )
+          ) : nearby.isPending ? (
             <LoadingState />
           ) : nearby.isError ? (
             <ErrorState onRetry={() => nearby.refetch()} />

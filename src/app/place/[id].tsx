@@ -84,7 +84,7 @@ export default function PlaceScreen() {
 
   const category = CATEGORY_BY_SLUG[place.categorySlug];
   const distance =
-    location && place.lat !== null && place.lng !== null
+    location?.origin && place.lat !== null && place.lng !== null
       ? distanceMeters(location.origin, { lat: place.lat, lng: place.lng })
       : undefined;
   const hasReviews = place.ratingCount > 0;

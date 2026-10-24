@@ -25,12 +25,14 @@ const RANKING_PAGE_SIZE = 30;
  * Position arrondie à ~100 m pour la clé de cache : les petites variations du GPS
  * ne relancent pas la requête.
  */
-const originKey = (origin: Coordinates) => [origin.lat.toFixed(3), origin.lng.toFixed(3)];
+const originKey = (origin: Coordinates | null) =>
+  origin ? [origin.lat.toFixed(3), origin.lng.toFixed(3)] : null;
 
-async function fetchNearby(origin: Coordinates, filters: PlaceFilters, limit: number, offset = 0) {
+/** Sans position réelle (`origin` nul), les lieux sont renvoyés sans distance. */
+async function fetchNearby(origin: Coordinates | null, filters: PlaceFilters, limit: number, offset = 0) {
   const { data, error } = await supabase.rpc('nearby_places', {
-    p_lat: origin.lat,
-    p_lng: origin.lng,
+    p_lat: origin?.lat,
+    p_lng: origin?.lng,
     // `undefined` plutôt que `null` : l'argument est omis et prend sa valeur par défaut.
     p_category: filters.category ?? undefined,
     p_district: filters.district ?? undefined,

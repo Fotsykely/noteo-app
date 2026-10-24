@@ -9,12 +9,13 @@ import type { Coordinates } from '@/types';
 
 /**
  * - `device`  : position réelle de l'appareil
- * - `denied`  : autorisation refusée ou position indisponible → centre de Tana
- * - `outside` : appareil hors du Grand Tana → centre de Tana
+ * - `denied`  : autorisation refusée ou position indisponible → pas de position
+ * - `outside` : appareil hors du Grand Tana → pas de position
  */
 export type LocationSource = 'device' | 'denied' | 'outside';
 
-export type UserLocation = { origin: Coordinates; source: LocationSource };
+/** `origin` n'est renseignée que pour une position réelle : sans elle, aucune distance n'est affichée. */
+export type UserLocation = { origin: Coordinates | null; source: LocationSource };
 
 /**
  * Au-delà, on n'attend plus : mieux vaut une liste tout de suite qu'une liste parfaite.
@@ -25,7 +26,7 @@ export type UserLocation = { origin: Coordinates; source: LocationSource };
 const PERMISSION_TIMEOUT_MS = 10_000;
 const POSITION_TIMEOUT_MS = 8000;
 
-const fallback = (source: LocationSource): UserLocation => ({ origin: TANA_CENTER, source });
+const fallback = (source: LocationSource): UserLocation => ({ origin: null, source });
 
 const withTimeout = <T>(promise: Promise<T>, ms: number) =>
   Promise.race([promise, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);

@@ -11,6 +11,7 @@ import { ErrorState, LoadingState } from '@/components/ui/query-state';
 import { Screen } from '@/components/ui/screen';
 import { CATEGORIES } from '@/constants/categories';
 import { useIsDesktop } from '@/hooks/use-breakpoint';
+import { useLocation } from '@/hooks/use-location';
 import { useCategoryCounts, useDistricts, useRankedPlaces } from '@/hooks/use-places';
 import type { SortMode } from '@/lib/places';
 import type { CategorySlug } from '@/types';
@@ -23,7 +24,11 @@ export default function ExploreScreen() {
     (params.category as CategorySlug) ?? null
   );
   const [district, setDistrict] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortMode>('rating');
+  const [chosenSort, setSort] = useState<SortMode>('rating');
+  // Trier par distance suppose la position réelle de l'appareil.
+  const location = useLocation();
+  const canSortByDistance = location?.source === 'device';
+  const sort: SortMode = canSortByDistance ? chosenSort : 'rating';
 
   // L'onglet reste monté : une tuile de l'accueil qui change `?category=` doit
   // mettre le filtre à jour (ajustement pendant le rendu, sans effet).
@@ -104,12 +109,14 @@ export default function ExploreScreen() {
               selected={sort === 'rating'}
               onPress={() => setSort('rating')}
             />
-            <Chip
-              label="Plus proches"
-              icon="navigate-outline"
-              selected={sort === 'distance'}
-              onPress={() => setSort('distance')}
-            />
+            {canSortByDistance && (
+              <Chip
+                label="Plus proches"
+                icon="navigate-outline"
+                selected={sort === 'distance'}
+                onPress={() => setSort('distance')}
+              />
+            )}
           </View>
         </Container>
       </View>

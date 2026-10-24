@@ -372,9 +372,9 @@ export type Database = {
           p_category?: string
           p_district?: string
           p_include_pending?: boolean
-          p_lat: number
+          p_lat?: number
           p_limit?: number
-          p_lng: number
+          p_lng?: number
           p_offset?: number
           p_radius_m?: number
           p_search?: string

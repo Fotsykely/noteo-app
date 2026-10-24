@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { DistrictPicker } from '@/components/district-picker';
+import { LocationSheet } from '@/components/location-sheet';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/category-chip';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -12,7 +13,7 @@ import { LoadingState } from '@/components/ui/query-state';
 import { CATEGORIES, CATEGORY_BY_SLUG } from '@/constants/categories';
 import { getVisitPosition } from '@/hooks/use-location';
 import { usePlace } from '@/hooks/use-places';
-import { useHasRole, useIsModerator } from '@/hooks/use-role';
+import { useIsModerator } from '@/hooks/use-role';
 import { useColors } from '@/hooks/use-theme';
 import { REQUIRED_ON_SITE_REVIEWS } from '@/lib/places';
 import { useSession } from '@/lib/session';
@@ -20,7 +21,14 @@ import { supabase } from '@/lib/supabase';
 import { cn, noWebOutline } from '@/lib/utils';
 import type { CategorySlug, Coordinates } from '@/types';
 
-type PositionState = { status: 'locating' } | { status: 'found'; coords: Coordinates } | { status: 'unavailable' };
+/**
+ * La position est obligatoire : celle du téléphone (`device`) ou un repère placé sur la
+ * carte (`map`). Sans elle, le lieu ne pourrait pas être vérifié par les avis sur place.
+ */
+type PositionState =
+  | { status: 'locating' }
+  | { status: 'found'; coords: Coordinates; source: 'device' | 'map' }
+  | { status: 'missing' };
 
 function Field({
   label,
@@ -63,7 +71,6 @@ export default function NewPlaceScreen() {
   const colors = useColors();
   const queryClient = useQueryClient();
   const user = useSession();
-  const isAdmin = useHasRole('admin');
   const isModerator = useIsModerator();
 
   // `?id=…` : un modérateur corrige une fiche existante au lieu d'en créer une.
@@ -81,19 +88,21 @@ export default function NewPlaceScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publishNow, setPublishNow] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
 
   // On propose un lieu depuis place : la position du téléphone devient celle du lieu.
   const fetchPosition = useCallback(
     () =>
       getVisitPosition().then((coords) =>
-        setPosition(coords ? { status: 'found', coords } : { status: 'unavailable' })
+        setPosition(coords ? { status: 'found', coords, source: 'device' } : { status: 'missing' })
       ),
     []
   );
 
   // L'état initial est déjà « localisation en cours » : l'effet ne fait que lancer la recherche.
-  // En correction, la position de la fiche est conservée tant que le modérateur ne choisit
-  // pas explicitement la sienne : il peut corriger à distance.
+  // Sans position (localisation éteinte, refusée), on ne devine rien : l'utilisateur place
+  // le lieu sur la carte. En correction, la position de la fiche est conservée tant que le
+  // modérateur ne la change pas : il peut corriger à distance.
   useEffect(() => {
     if (user && !editing) fetchPosition();
   }, [user, editing, fetchPosition]);
@@ -110,8 +119,8 @@ export default function NewPlaceScreen() {
     setPhone(editedPlace.phone ?? '');
     setPosition(
       editedPlace.lat !== null && editedPlace.lng !== null
-        ? { status: 'found', coords: { lat: editedPlace.lat, lng: editedPlace.lng } }
-        : { status: 'unavailable' }
+        ? { status: 'found', coords: { lat: editedPlace.lat, lng: editedPlace.lng }, source: 'map' }
+        : { status: 'missing' }
     );
   }
 
@@ -121,11 +130,11 @@ export default function NewPlaceScreen() {
   }
 
   const canSubmit =
-    name.trim().length > 1 && category !== null && district !== null && position.status !== 'locating';
+    name.trim().length > 1 && category !== null && district !== null && position.status === 'found';
 
   async function submit() {
-    if (!category || !district) return;
-    const coords = position.status === 'found' ? position.coords : null;
+    if (!category || !district || position.status !== 'found') return;
+    const coords = position.coords;
 
     setBusy(true);
     setError(null);
@@ -140,15 +149,15 @@ export default function NewPlaceScreen() {
           district,
           address: address.trim() || null,
           phone: phone.trim() || null,
-          lat: coords?.lat ?? null,
-          lng: coords?.lng ?? null,
+          lat: coords.lat,
+          lng: coords.lng,
         })
         .eq('id', id);
 
       // Un lieu « à confirmer » corrigé par un modérateur peut être publié sans attendre
       // ses 3 avis sur place (la base exige une position pour cela).
       const publish =
-        !error && publishNow && coords && editedPlace?.status === 'pending'
+        !error && publishNow && editedPlace?.status === 'pending'
           ? await supabase.rpc('moderate_place', { p_place_id: id!, p_status: 'published' })
           : null;
       setBusy(false);
@@ -176,10 +185,10 @@ export default function NewPlaceScreen() {
         district,
         address: address.trim() || null,
         phone: phone.trim() || null,
-        lat: coords?.lat ?? null,
-        lng: coords?.lng ?? null,
-        // Un admin publie directement ; sans position, même un admin doit repasser.
-        status: isAdmin && coords ? 'published' : 'pending',
+        lat: coords.lat,
+        lng: coords.lng,
+        // Un modérateur (admin compris) publie directement ; les autres attendent 3 avis sur place.
+        status: isModerator ? 'published' : 'pending',
       })
       .select('id')
       .single();
@@ -248,46 +257,73 @@ export default function NewPlaceScreen() {
         <Text className="text-sm leading-5 text-ink-500 dark:text-ink-300">
           {editing
             ? 'Corrigez les informations de ce lieu. Les changements sont visibles tout de suite.'
-            : isAdmin
-            ? 'Ajoutez un lieu absent du catalogue. En tant qu\'administrateur, il est publié directement.'
+            : isModerator
+            ? 'Ajoutez un lieu absent du catalogue. En tant que modérateur, il est publié directement.'
             : `Ajoutez un lieu absent du catalogue. Il apparaîtra « à confirmer » jusqu'à ce que ${REQUIRED_ON_SITE_REVIEWS} personnes l'aient noté sur place, vous compris.`}
         </Text>
 
         {/* Position : c'est elle qui permet de vérifier les avis donnés sur place. */}
-        <View className="mt-5 flex-row items-center gap-3 rounded-card bg-ink-50 p-4 dark:bg-white/5">
-          <Ionicons
-            name={position.status === 'found' ? 'location' : 'location-outline'}
-            size={20}
-            color={position.status === 'found' ? colors.brand : colors.textMuted}
-          />
-          <View className="flex-1">
-            <Text className="text-sm font-semibold text-ink dark:text-white">
-              {position.status === 'locating'
-                ? 'Localisation en cours…'
-                : position.status === 'found'
-                  ? editing
-                    ? 'Position du lieu'
-                    : 'Position du lieu enregistrée'
-                  : editing
-                    ? 'Ce lieu n\'a pas de position'
-                    : 'Position indisponible'}
-            </Text>
-            <Text className="mt-0.5 text-xs leading-4 text-ink-500 dark:text-ink-300">
-              {editing
-                ? 'Sans position, un lieu ne peut ni être publié ni vérifié par les avis sur place. Si vous êtes sur place, utilisez votre position.'
-                : position.status === 'unavailable'
-                  ? 'Le lieu sera vérifié par un administrateur avant d\'être publié. Activez la localisation pour qu\'il soit confirmé par les avis.'
-                  : 'Proposez le lieu depuis place : la position de votre téléphone devient celle du lieu.'}
-            </Text>
-          </View>
-          {(position.status === 'unavailable' || editing) && position.status !== 'locating' && (
-            <Pressable onPress={retryLocate} accessibilityRole="button" hitSlop={8} className="active:opacity-60">
-              <Text className="text-sm font-semibold text-brand-500">
-                {editing ? 'Ma position' : 'Réessayer'}
+        <View className="mt-5 rounded-card bg-ink-50 p-4 dark:bg-white/5">
+          <View className="flex-row items-center gap-3">
+            <Ionicons
+              name={position.status === 'found' ? 'location' : 'location-outline'}
+              size={20}
+              color={position.status === 'found' ? colors.brand : colors.textMuted}
+            />
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-ink dark:text-white">
+                {position.status === 'locating'
+                  ? 'Localisation en cours…'
+                  : position.status === 'missing'
+                    ? 'Indiquez où se trouve le lieu'
+                    : editing
+                      ? 'Position du lieu'
+                      : position.source === 'device'
+                        ? 'Position de votre téléphone'
+                        : 'Repère placé sur la carte'}
               </Text>
-            </Pressable>
+              <Text className="mt-0.5 text-xs leading-4 text-ink-500 dark:text-ink-300">
+                {position.status === 'missing'
+                  ? 'Placez le lieu sur la carte, ou utilisez votre position si vous y êtes. Elle sert à vérifier les avis donnés sur place.'
+                  : editing
+                    ? 'Corrigez-la sur la carte si elle est inexacte.'
+                    : position.status === 'found' && position.source === 'device'
+                      ? 'Vous êtes sur place : la position de votre téléphone devient celle du lieu.'
+                      : 'Les avis donnés sur place sont vérifiés par rapport à ce repère.'}
+              </Text>
+            </View>
+          </View>
+          {position.status !== 'locating' && (
+            <View className="mt-3 flex-row gap-5 pl-8">
+              <Pressable
+                onPress={() => setMapOpen(true)}
+                accessibilityRole="button"
+                hitSlop={8}
+                className="active:opacity-60">
+                <Text className="text-sm font-semibold text-brand-500">
+                  {position.status === 'found' ? 'Modifier sur la carte' : 'Choisir sur la carte'}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={retryLocate}
+                accessibilityRole="button"
+                hitSlop={8}
+                className="active:opacity-60">
+                <Text className="text-sm font-semibold text-brand-500">Ma position</Text>
+              </Pressable>
+            </View>
           )}
         </View>
+
+        <LocationSheet
+          visible={mapOpen}
+          initial={position.status === 'found' ? position.coords : null}
+          onClose={() => setMapOpen(false)}
+          onConfirm={(coords) => {
+            setPosition({ status: 'found', coords, source: 'map' });
+            setMapOpen(false);
+          }}
+        />
 
         <Field label="Nom du lieu" value={name} onChangeText={setName} placeholder="Ex. Garage Mamy Auto" />
 
@@ -362,7 +398,7 @@ export default function NewPlaceScreen() {
         )}
 
         <Button
-          label={editing ? 'Enregistrer les corrections' : isAdmin ? 'Publier ce lieu' : 'Proposer ce lieu'}
+          label={editing ? 'Enregistrer les corrections' : isModerator ? 'Publier ce lieu' : 'Proposer ce lieu'}
           fullWidth
           loading={busy}
           disabled={!canSubmit}
